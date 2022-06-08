@@ -37,8 +37,9 @@ class Repository(private val application: Application) {
         )
 
         val orderBy = MediaStore.Images.Media.DATE_TAKEN //order data by date
+        val collection: Uri =MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val cursor: Cursor? = application.contentResolver.query(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, columns, null,
+            collection, columns, null,
             null, "$orderBy DESC"
         ) //get all data in Cursor by sorting in DESC order
 
@@ -100,8 +101,9 @@ class Repository(private val application: Application) {
             MediaStore.Video.Media.BUCKET_ID
         )
         val orderBy = MediaStore.Video.Media.DATE_TAKEN //order data by date
+        val collection: Uri =MediaStore.Video.Media.EXTERNAL_CONTENT_URI
         val cursor: Cursor? = application.contentResolver.query(
-            MediaStore.Video.Media.EXTERNAL_CONTENT_URI, columns, null,
+            collection, columns, null,
             null, "$orderBy DESC"
         ) //get all data in Cursor by sorting in DESC order
 
@@ -154,8 +156,8 @@ class Repository(private val application: Application) {
     }
 
     private fun fetchAllDocs(): LiveData<ArrayList<Documents>> {
-        val listVideos: ArrayList<Documents> = ArrayList()
-        val mutableListVideos = MutableLiveData<ArrayList<Documents>>()
+        val listDocuments: ArrayList<Documents> = ArrayList()
+        val mutableListDocuments = MutableLiveData<ArrayList<Documents>>()
 
         val projection = arrayOf(
             MediaStore.Files.FileColumns._ID,
@@ -174,11 +176,12 @@ class Repository(private val application: Application) {
         } else {
             MediaStore.Files.getContentUri("external")
         }
+
         application.contentResolver.query(
             collection,
             projection,
             selection,
-            selectionArgs,
+            null,
             sortOrder
         ).use { cursor ->
             assert(cursor != null)
@@ -195,11 +198,11 @@ class Repository(private val application: Application) {
                         val name: String = cursor.getString(columnName)
                         val size: String = cursor.getString(columnSize)
 
-                        val file = File(path)
+                        val file = File("path")
                         val fileUri = Uri.fromFile(file)
                         if (file.exists()) {
                             //you can get your pdf files
-                            listVideos.add(
+                            listDocuments.add(
                                 Documents(
                                     id,
                                     name,
@@ -213,7 +216,7 @@ class Repository(private val application: Application) {
                 }
             }
         }
-        mutableListVideos.value = listVideos
-        return mutableListVideos
+        mutableListDocuments.value = listDocuments
+        return mutableListDocuments
     }
 }

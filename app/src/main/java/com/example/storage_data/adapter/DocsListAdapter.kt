@@ -200,7 +200,6 @@ class DocsListAdapter(private val context: Fragment) :
                 } else {
                     name.error = "Field required."
                 }
-                dialog.dismiss()
             }
 
             dialog.show()

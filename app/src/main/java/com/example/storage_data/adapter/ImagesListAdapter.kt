@@ -73,8 +73,10 @@ class ImagesListAdapter(private val context: Fragment) :
 
                     when (item.itemId) {
 
-                        R.id.action_rename -> requestWriteR()
-                        R.id.action_delete -> requestDeleteR(it, images)
+                        R.id.action_rename ->
+                            requestWriteR()
+                        R.id.action_delete ->
+                            requestDeleteR(it, images)
 
                     }
                     true
@@ -106,6 +108,7 @@ class ImagesListAdapter(private val context: Fragment) :
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val pi =
                 MediaStore.createWriteRequest(context.requireContext().contentResolver, uriList)
+
             (context.context as Activity).startIntentSenderForResult(
                 pi.intentSender, 126,
                 null, 0, 0, 0, null
@@ -206,7 +209,6 @@ class ImagesListAdapter(private val context: Fragment) :
                 } else {
                     name.error = "Field required."
                 }
-                dialog.dismiss()
             }
 
             dialog.show()

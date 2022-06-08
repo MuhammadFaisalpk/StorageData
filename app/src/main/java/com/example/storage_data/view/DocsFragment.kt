@@ -1,9 +1,17 @@
 package com.example.storage_data.view
 
+import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -14,6 +22,7 @@ import com.example.storage_data.R
 import com.example.storage_data.adapter.DocsListAdapter
 import com.example.storage_data.databinding.FragmentDocsBinding
 import com.example.storage_data.viewModel.ViewModel
+
 
 class DocsFragment : Fragment() {
 
@@ -50,7 +59,6 @@ class DocsFragment : Fragment() {
             RecyclerView.VERTICAL, false
         )
     }
-
     private fun getAllItems() {
         viewModal = ViewModelProvider(
             this,

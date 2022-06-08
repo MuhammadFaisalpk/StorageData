@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Task 1</string>
+    <string name="app_name">Storage Data</string>
     <string name="hello_blank_fragment">Hello Blank Fragment</string>
     <string name="ok">Ok</string>
     <string name="storage_permission_check">Storage permissions required.</string>
