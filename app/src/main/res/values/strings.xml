@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Task 1</string>
+    <string name="hello_blank_fragment">Hello Blank Fragment</string>
+    <string name="ok">Ok</string>
+    <string name="storage_permission_check">Storage permissions required.</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="rename">Rename</string>
+    <string name="delete">Delete</string>
+    <string name="enter_new_name">Enter new name</string>
+</resources>
