@@ -7,6 +7,9 @@ import com.example.storage_data.model.Documents
 import com.example.storage_data.model.Images
 import com.example.storage_data.model.Videos
 import com.example.storage_data.repository.Repository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 class ViewModel(application: Application) : AndroidViewModel(application) {
 

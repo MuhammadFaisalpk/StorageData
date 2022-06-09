@@ -258,8 +258,8 @@ class VideosListAdapter(private val context: Fragment) :
                                     null,
                                     null
                                 )
+                                deleteFromList(newPosition)
                             }
-
                         }
                         self.dismiss()
                     }

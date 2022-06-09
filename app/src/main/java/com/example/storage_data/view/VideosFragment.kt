@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -21,6 +22,8 @@ class VideosFragment : Fragment() {
     lateinit var videosListAdapter: VideosListAdapter
     private lateinit var binding: FragmentVideosBinding
     private lateinit var recyclerView: RecyclerView
+    private lateinit var progressBar: ProgressBar
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -40,6 +43,7 @@ class VideosFragment : Fragment() {
     private fun initViews() {
 
         recyclerView = binding.recyclerView
+        progressBar = binding.progressBar
 
         videosListAdapter = VideosListAdapter(this)
         recyclerView.adapter = videosListAdapter
@@ -56,9 +60,11 @@ class VideosFragment : Fragment() {
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         ).get(ViewModel::class.java)
 
-        viewModal.getAllVideos().observe(viewLifecycleOwner) { videos ->
-            if (videos.size > 0) {
-                videosListAdapter.setListItems(videos)
+        viewModal.getAllVideos().observe(viewLifecycleOwner) { list ->
+            list?.let {
+                //on below line we are updating our list.
+                progressBar.visibility = View.GONE
+                videosListAdapter.setListItems(list)
             }
         }
     }

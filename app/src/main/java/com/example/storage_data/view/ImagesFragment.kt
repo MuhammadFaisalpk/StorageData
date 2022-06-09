@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -21,7 +22,8 @@ import kotlinx.coroutines.launch
 class ImagesFragment : Fragment() {
 
     private lateinit var viewModal: ViewModel
-
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var progressBar: ProgressBar
     lateinit var imagesListAdapter: ImagesListAdapter
     private lateinit var binding: FragmentImagesBinding
 
@@ -48,7 +50,8 @@ class ImagesFragment : Fragment() {
 
     private fun initViews() {
 
-        val recyclerView = binding.recyclerView
+        recyclerView = binding.recyclerView
+        progressBar = binding.progressBar
 
         imagesListAdapter = ImagesListAdapter(this)
         recyclerView.adapter = imagesListAdapter
@@ -65,11 +68,12 @@ class ImagesFragment : Fragment() {
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         ).get(ViewModel::class.java)
 
-        viewModal.getAllImages().observe(viewLifecycleOwner, Observer { list ->
+        viewModal.getAllImages().observe(viewLifecycleOwner) { list ->
             list?.let {
                 //on below line we are updating our list.
+                progressBar.visibility = View.GONE
                 imagesListAdapter.setListItems(it)
             }
-        })
+        }
     }
 }

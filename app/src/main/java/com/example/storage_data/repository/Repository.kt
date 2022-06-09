@@ -37,7 +37,7 @@ class Repository(private val application: Application) {
         )
 
         val orderBy = MediaStore.Images.Media.DATE_TAKEN //order data by date
-        val collection: Uri =MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        val collection: Uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
         val cursor: Cursor? = application.contentResolver.query(
             collection, columns, null,
             null, "$orderBy DESC"
@@ -63,7 +63,7 @@ class Repository(private val application: Application) {
                 val id: String = cursor.getString(ID)
                 val path: String = cursor.getString(DATA)
                 val title: String = cursor.getString(TITLE)
-                val folderName: String = cursor.getString(BUCKET_DISPLAY_NAME)
+                val folderName: String? = cursor.getString(BUCKET_DISPLAY_NAME)
                 val folderID: String = cursor.getString(BUCKET_ID)
                 val size: String = cursor.getString(SIZE)
 
@@ -101,7 +101,7 @@ class Repository(private val application: Application) {
             MediaStore.Video.Media.BUCKET_ID
         )
         val orderBy = MediaStore.Video.Media.DATE_TAKEN //order data by date
-        val collection: Uri =MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        val collection: Uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
         val cursor: Cursor? = application.contentResolver.query(
             collection, columns, null,
             null, "$orderBy DESC"
@@ -129,7 +129,7 @@ class Repository(private val application: Application) {
                 val id: String = cursor.getString(ID)
                 val path: String = cursor.getString(DATA)
                 val title: String = cursor.getString(TITLE)
-                val folderName: String = cursor.getString(BUCKET_DISPLAY_NAME)
+                val folderName: String? = cursor.getString(BUCKET_DISPLAY_NAME)
                 val folderID: String = cursor.getString(BUCKET_ID)
                 val size: String = cursor.getString(SIZE)
                 val duration: Long = cursor.getString(DURATION).toLong()
@@ -161,11 +161,11 @@ class Repository(private val application: Application) {
 
         val projection = arrayOf(
             MediaStore.Files.FileColumns._ID,
-            MediaStore.Files.FileColumns.DISPLAY_NAME,
+            MediaStore.Files.FileColumns.TITLE,
             MediaStore.Files.FileColumns.DATE_ADDED,
             MediaStore.Files.FileColumns.DATA,
             MediaStore.Files.FileColumns.MIME_TYPE,
-            MediaStore.Files.FileColumns.SIZE
+            MediaStore.Files.FileColumns.SIZE,
         )
         val sortOrder = MediaStore.Files.FileColumns.DATE_ADDED + " DESC"
         val selection = MediaStore.Files.FileColumns.MIME_TYPE + " = ?"
@@ -181,24 +181,23 @@ class Repository(private val application: Application) {
             collection,
             projection,
             selection,
-            null,
+            selectionArgs,
             sortOrder
         ).use { cursor ->
-            assert(cursor != null)
             if (cursor != null) {
                 if (cursor.moveToFirst()) {
                     val columnID: Int = cursor.getColumnIndex(MediaStore.Files.FileColumns._ID)
                     val columnData: Int = cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
                     val columnSize: Int = cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
                     val columnName: Int =
-                        cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
+                        cursor.getColumnIndex(MediaStore.Files.FileColumns.TITLE)
                     do {
                         val id: String = cursor.getString(columnID)
                         val path: String = cursor.getString(columnData)
                         val name: String = cursor.getString(columnName)
                         val size: String = cursor.getString(columnSize)
 
-                        val file = File("path")
+                        val file = File(path)
                         val fileUri = Uri.fromFile(file)
                         if (file.exists()) {
                             //you can get your pdf files

@@ -1,10 +1,8 @@
 package com.example.storage_data.adapter
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
 import android.content.ContentValues
-import android.content.Intent
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -19,7 +17,6 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.example.storage_data.ImageSliderActivity
 import com.example.storage_data.R
 import com.example.storage_data.model.Documents
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -58,13 +55,6 @@ class DocsListAdapter(private val context: Fragment) :
                 .skipMemoryCache(true)
                 .into(holder.imageHolder)
 
-            holder.itemView.setOnClickListener() {
-                val intent = Intent(it.context, ImageSliderActivity::class.java)
-                intent.putExtra("image_position", position)
-                intent.putExtra("images_list", items)
-                it.context.startActivity(intent)
-            }
-
             holder.optionHolder.setOnClickListener() {
                 val popupMenu = PopupMenu(it.context, holder.optionHolder)
                 popupMenu.menuInflater.inflate(R.menu.popup_menu, popupMenu.menu)
@@ -72,7 +62,7 @@ class DocsListAdapter(private val context: Fragment) :
                     newPosition = position
 
                     when (item.itemId) {
-                        R.id.action_rename -> requestWriteR()
+                        R.id.action_rename -> renameFunction(newPosition)
                         R.id.action_delete -> {
                             if (document != null) {
                                 requestDeleteDocument(it, document)
@@ -86,25 +76,6 @@ class DocsListAdapter(private val context: Fragment) :
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-    private fun requestWriteR() {
-        //files to modify
-        val uriList: List<Uri> = listOf(
-            Uri.withAppendedPath(
-                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                items?.get(newPosition)?.id
-            )
-        )
-        //requesting file write permission for specific files
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val pi =
-                MediaStore.createWriteRequest(context.requireContext().contentResolver, uriList)
-            (context.context as Activity).startIntentSenderForResult(
-                pi.intentSender, 128,
-                null, 0, 0, 0, null
-            )
-        } else renameFunction(newPosition)
     }
 
     private fun renameFunction(position: Int) {
@@ -122,16 +93,20 @@ class DocsListAdapter(private val context: Fragment) :
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         val currentFile = items?.get(position)?.path?.let { File(it) }
                         if (currentFile != null) {
-                            if (currentFile.exists() && newName.toString()
+                            if (currentFile.exists() && newName
                                     .isNotEmpty()
                             ) {
                                 val newFile = File(
                                     currentFile.parentFile,
-                                    newName.toString() + "." + currentFile.extension
+                                    newName + "." + currentFile.extension
                                 )
 
                                 val fromUri = Uri.withAppendedPath(
-                                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                                        MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
+                                    } else {
+                                        MediaStore.Files.getContentUri("external")
+                                    },
                                     items?.get(position)?.id
                                 )
 
@@ -220,51 +195,29 @@ class DocsListAdapter(private val context: Fragment) :
         notifyItemChanged(position)
     }
 
-    private fun requestDeleteDocument(v: View?, item: Documents) {
-        //list of videos to delete
-        val uriList: List<Uri> = listOf(
-            Uri.withAppendedPath(
-                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                item.id
-            )
-        )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            //requesting for delete permission
-            if (v != null) {
-                val pi =
-                    MediaStore.createDeleteRequest(v.context.contentResolver, uriList)
-
-                (v.context as Activity).startIntentSenderForResult(
-                    pi.intentSender, 123,
-                    null, 0, 0, 0, null
-                )
-            }
-        } else {
-            //for devices less than android 11
-            if (v != null) {
-                val file = item.path?.let { File(it) }
-                val builder = MaterialAlertDialogBuilder(v.context)
-                builder.setTitle("Delete Document?")
-                    .setMessage(item.title)
-                    .setPositiveButton("Yes") { self, _ ->
-                        if (file != null) {
-                            if (file.exists() && file.delete()) {
-                                MediaScannerConnection.scanFile(
-                                    v.context,
-                                    arrayOf(file.path),
-                                    null,
-                                    null
-                                )
-                            }
-
+    private fun requestDeleteDocument(v: View?, docs: Documents?) {
+        if (v != null) {
+            val file = docs?.path?.let { File(it) }
+            val builder = MaterialAlertDialogBuilder(v.context)
+            builder.setTitle("Delete Document?")
+                .setMessage(docs?.title)
+                .setPositiveButton("Yes") { self, _ ->
+                    if (file != null) {
+                        if (file.exists() && file.delete()) {
+                            MediaScannerConnection.scanFile(
+                                v.context,
+                                arrayOf(file.path),
+                                null,
+                                null
+                            )
+                            deleteFromList(newPosition)
                         }
-                        self.dismiss()
                     }
-                    .setNegativeButton("No") { self, _ -> self.dismiss() }
-                val delDialog = builder.create()
-                delDialog.show()
-            }
+                    self.dismiss()
+                }
+                .setNegativeButton("No") { self, _ -> self.dismiss() }
+            val delDialog = builder.create()
+            delDialog.show()
         }
     }
 
@@ -288,21 +241,7 @@ class DocsListAdapter(private val context: Fragment) :
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private fun updateDeleteUI(position: Int) {
-        items?.removeAt(position)
-        notifyDataSetChanged()
-    }
-
-    fun onResult(requestCode: Int, resultCode: Int) {
-        when (requestCode) {
-            123 -> {
-                if (resultCode == Activity.RESULT_OK) updateDeleteUI(newPosition)
-            }
-        }
-    }
-
-    public fun setListItems(items: ArrayList<Documents>) {
+    fun setListItems(items: ArrayList<Documents>) {
         this.items = items
         notifyDataSetChanged()
     }

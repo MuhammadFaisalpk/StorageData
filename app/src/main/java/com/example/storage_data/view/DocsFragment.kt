@@ -11,6 +11,7 @@ import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
 import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
@@ -29,6 +30,8 @@ class DocsFragment : Fragment() {
     private lateinit var viewModal: ViewModel
     lateinit var docsListAdapter: DocsListAdapter
     private lateinit var binding: FragmentDocsBinding
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var progressBar: ProgressBar
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -49,7 +52,8 @@ class DocsFragment : Fragment() {
 
     private fun initViews() {
 
-        val recyclerView = binding.recyclerView
+         recyclerView = binding.recyclerView
+        progressBar = binding.progressBar
 
         docsListAdapter = DocsListAdapter(this)
         recyclerView.adapter = docsListAdapter
@@ -59,17 +63,19 @@ class DocsFragment : Fragment() {
             RecyclerView.VERTICAL, false
         )
     }
+
     private fun getAllItems() {
         viewModal = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         ).get(ViewModel::class.java)
 
-        viewModal.getAllDocs().observe(viewLifecycleOwner, Observer { list ->
+        viewModal.getAllDocs().observe(viewLifecycleOwner) { list ->
             list?.let {
                 //on below line we are updating our list.
+                progressBar.visibility = View.GONE
                 docsListAdapter.setListItems(it)
             }
-        })
+        }
     }
 }

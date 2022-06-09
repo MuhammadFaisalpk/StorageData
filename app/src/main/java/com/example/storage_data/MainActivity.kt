@@ -1,8 +1,8 @@
 package com.example.storage_data
 
-import android.Manifest
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+import android.content.ContentUris
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
 import android.os.Environment
+import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Log
 import android.view.View
@@ -24,12 +25,14 @@ import androidx.fragment.app.FragmentManager
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.example.storage_data.databinding.ActivityMainBinding
+import com.example.storage_data.model.Documents
 import com.example.storage_data.view.DocsFragment
 import com.example.storage_data.view.ImagesFragment
 import com.example.storage_data.view.VideosFragment
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import java.io.File
 
 
 open class MainActivity : AppCompatActivity() {
@@ -41,7 +44,6 @@ open class MainActivity : AppCompatActivity() {
     private val READ_STORAGE_PERMISSION_REQUEST_CODE = 14
     private val WRITE_STORAGE_PERMISSION_REQUEST_CODE = 13
     val adapter = AdapterTabPager(this)
-
 
     private val listofFragment = arrayOf(
         ImagesFragment(),
@@ -57,14 +59,13 @@ open class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         initViews()
-//        if (requestRuntimePermission()) {
-//            setStatePageAdapter()
-//        }
+
         if (checkPermission()) {
             setStatePageAdapter()
         } else {
             requestPermission()
         }
+
         tabLayoutListener()
     }
 
@@ -80,63 +81,31 @@ open class MainActivity : AppCompatActivity() {
         return if (SDK_INT >= Build.VERSION_CODES.R) {
             Environment.isExternalStorageManager()
         } else {
-            val result =
+            val readStorage =
                 ContextCompat.checkSelfPermission(this, READ_EXTERNAL_STORAGE)
-            val result1 =
+            val writeStorage =
                 ContextCompat.checkSelfPermission(this, WRITE_EXTERNAL_STORAGE)
-            result == PackageManager.PERMISSION_GRANTED && result1 == PackageManager.PERMISSION_GRANTED
+            readStorage == PackageManager.PERMISSION_GRANTED &&
+                    writeStorage == PackageManager.PERMISSION_GRANTED
         }
     }
 
     private fun requestPermission() {
         if (SDK_INT >= Build.VERSION_CODES.R) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(READ_EXTERNAL_STORAGE),
-                READ_STORAGE_PERMISSION_REQUEST_CODE
-            )
+            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+            intent.data = Uri.parse("package:$packageName");
+            startActivityForResult(intent, 2296)
         } else {
             //below android 11
             ActivityCompat.requestPermissions(
                 this,
-                arrayOf(WRITE_EXTERNAL_STORAGE),
+                arrayOf(
+                    WRITE_EXTERNAL_STORAGE,
+                    READ_EXTERNAL_STORAGE
+                ),
                 WRITE_STORAGE_PERMISSION_REQUEST_CODE
             )
         }
-    }
-
-    //for requesting permission
-    private fun requestRuntimePermission(): Boolean {
-        //requesting storage permission for only devices less than api 28
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
-            if (ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                    WRITE_STORAGE_PERMISSION_REQUEST_CODE
-                )
-                return false
-            }
-        } else {
-            //read external storage permission for devices higher than android 10 i.e. api 29
-            if (ActivityCompat.checkSelfPermission(
-                    this,
-                    READ_EXTERNAL_STORAGE
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(READ_EXTERNAL_STORAGE),
-                    READ_STORAGE_PERMISSION_REQUEST_CODE
-                )
-                return false
-            }
-        }
-        return true
     }
 
     private fun setStatePageAdapter() {
@@ -211,18 +180,18 @@ open class MainActivity : AppCompatActivity() {
                 )
             }
         }
-        if (requestCode == READ_STORAGE_PERMISSION_REQUEST_CODE) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                setStatePageAdapter()
-            } else {
-                showSnackBar(
-                    R.string.storage_permission_check,
-                    Snackbar.LENGTH_INDEFINITE,
-                    R.string.ok,
-                    requestCode
-                )
-            }
-        }
+//        if (requestCode == READ_STORAGE_PERMISSION_REQUEST_CODE) {
+//            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                setStatePageAdapter()
+//            } else {
+//                showSnackBar(
+//                    R.string.storage_permission_check,
+//                    Snackbar.LENGTH_INDEFINITE,
+//                    R.string.ok,
+//                    requestCode
+//                )
+//            }
+//        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -244,17 +213,14 @@ open class MainActivity : AppCompatActivity() {
                 2296 -> {
                     if (SDK_INT >= Build.VERSION_CODES.R) {
                         if (Environment.isExternalStorageManager()) {
-                            Toast.makeText(
-                                this, "Permissions Granted.",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            // perform action when allow permission success
+                            setStatePageAdapter()
                         } else {
-                            Toast.makeText(
-                                this,
-                                "Allow permission for storage access!",
-                                Toast.LENGTH_SHORT
-                            ).show();
+                            showSnackBar(
+                                R.string.storage_permission_check,
+                                Snackbar.LENGTH_INDEFINITE,
+                                R.string.ok,
+                                requestCode
+                            )
                         }
                     }
                 }
@@ -280,15 +246,7 @@ open class MainActivity : AppCompatActivity() {
         val snackBar =
             Snackbar.make(layout, permissionCheck, lengthLong)
                 .setAction(actionText) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        requestPermissions(
-                            arrayOf(
-                                READ_EXTERNAL_STORAGE,
-                                Manifest.permission.WRITE_EXTERNAL_STORAGE
-                            ),
-                            requestCode
-                        )
-                    }
+                    requestPermission()
                 }
         snackBar.show()
     }

@@ -3,6 +3,7 @@ package com.example.storage_data.adapter
 import android.app.Activity
 import android.app.Dialog
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
 import android.media.MediaScannerConnection
 import android.net.Uri
@@ -226,7 +227,7 @@ class ImagesListAdapter(private val context: Fragment) :
         )
         items?.removeAt(newPosition)
         items?.add(newPosition, newItem)
-        notifyItemChanged(position)
+        notifyItemChanged(newPosition)
     }
 
     private fun requestDeleteR(v: View?, images: Images?) {
@@ -263,8 +264,8 @@ class ImagesListAdapter(private val context: Fragment) :
                                     null,
                                     null
                                 )
+                                deleteFromList(newPosition)
                             }
-
                         }
                         self.dismiss()
                     }
