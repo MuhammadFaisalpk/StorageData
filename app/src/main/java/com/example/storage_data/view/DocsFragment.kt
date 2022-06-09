@@ -12,11 +12,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
@@ -50,9 +52,19 @@ class DocsFragment : Fragment() {
         return binding.root
     }
 
+    fun gridChangeMethod() {
+        val isSwitched: Boolean = docsListAdapter.toggleItemViewType()
+        recyclerView.layoutManager =
+            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
+                context,
+                2
+            )
+//        imagesListAdapter.notifyDataSetChanged()
+    }
+
     private fun initViews() {
 
-         recyclerView = binding.recyclerView
+        recyclerView = binding.recyclerView
         progressBar = binding.progressBar
 
         docsListAdapter = DocsListAdapter(this)

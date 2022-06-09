@@ -20,6 +20,7 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         repository = Repository(application)
+
         allImages = repository.allLocalImages
         allVideos = repository.allLocalVideos
         allDocs = repository.allLocalDocs

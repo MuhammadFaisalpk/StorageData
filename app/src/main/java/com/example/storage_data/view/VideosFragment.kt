@@ -5,9 +5,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
@@ -52,6 +54,16 @@ class VideosFragment : Fragment() {
             activity,
             RecyclerView.VERTICAL, false
         )
+    }
+
+    fun gridChangeMethod() {
+        val isSwitched: Boolean = videosListAdapter.toggleItemViewType()
+        recyclerView.layoutManager =
+            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
+                context,
+                2
+            )
+//        imagesListAdapter.notifyDataSetChanged()
     }
 
     private fun getAllItems() {

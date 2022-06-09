@@ -2,7 +2,6 @@ package com.example.storage_data
 
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-import android.content.ContentUris
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -10,10 +9,9 @@ import android.os.Build
 import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
 import android.provider.Settings
-import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -25,25 +23,25 @@ import androidx.fragment.app.FragmentManager
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.example.storage_data.databinding.ActivityMainBinding
-import com.example.storage_data.model.Documents
 import com.example.storage_data.view.DocsFragment
 import com.example.storage_data.view.ImagesFragment
 import com.example.storage_data.view.VideosFragment
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import java.io.File
 
 
-open class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var layout: View
     lateinit var viewPager: ViewPager2
+    lateinit var gridChange: ImageView
+
     private lateinit var tabLayout: TabLayout
-    private val READ_STORAGE_PERMISSION_REQUEST_CODE = 14
     private val WRITE_STORAGE_PERMISSION_REQUEST_CODE = 13
-    val adapter = AdapterTabPager(this)
+    private val adapter = AdapterTabPager(this)
+    private lateinit var currentFragment: Fragment
 
     private val listofFragment = arrayOf(
         ImagesFragment(),
@@ -75,6 +73,16 @@ open class MainActivity : AppCompatActivity() {
 
         viewPager = binding.pager
         tabLayout = binding.tabs
+        gridChange = binding.gridChange
+
+        gridChange.setOnClickListener() {
+            currentFragment = listofFragment[viewPager.currentItem]
+            when (currentFragment) {
+                is ImagesFragment -> (currentFragment as ImagesFragment).gridChangeMethod()
+                is VideosFragment -> (currentFragment as VideosFragment).gridChangeMethod()
+                is DocsFragment -> (currentFragment as DocsFragment).gridChangeMethod()
+            }
+        }
     }
 
     private fun checkPermission(): Boolean {
@@ -114,6 +122,7 @@ open class MainActivity : AppCompatActivity() {
         }
         viewPager.adapter = adapter
         viewPager.currentItem = 0
+
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             tab.text = adapter.getTabTitle(position)
         }.attach()
@@ -130,6 +139,7 @@ open class MainActivity : AppCompatActivity() {
                     supportFragmentManager.popBackStack()
                 }
                 ft.commit()
+
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab) {

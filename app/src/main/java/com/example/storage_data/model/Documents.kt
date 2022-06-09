@@ -14,8 +14,7 @@ data class Documents(
         parcel.readString(),
         parcel.readString(),
         parcel.readParcelable(Uri::class.java.classLoader)
-    ) {
-    }
+    )
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(id)

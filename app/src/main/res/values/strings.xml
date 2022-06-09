@@ -8,4 +8,6 @@
     <string name="rename">Rename</string>
     <string name="delete">Delete</string>
     <string name="enter_new_name">Enter new name</string>
+    <string name="name">Name</string>
+    <string name="folder_name">Folder Name</string>
 </resources>

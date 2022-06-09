@@ -3,13 +3,16 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/drawable/ic_baseline_grid_on.xml" value="0.2505" />
         <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/layout/activity_file_explorer.xml" value="0.36666666666666664" />
         <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/layout/activity_main.xml" value="0.17831813576494426" />
         <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/layout/fragment_docs.xml" value="0.36666666666666664" />
         <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/layout/fragment_images.xml" value="0.17831813576494426" />
         <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/layout/fragment_videos.xml" value="0.36666666666666664" />
-        <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/layout/images_list_design.xml" value="0.36666666666666664" />
+        <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/layout/images_grid_design.xml" value="0.67" />
+        <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/layout/images_list_design.xml" value="0.25" />
         <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/layout/rename_dialog_design.xml" value="0.17831813576494426" />
+        <entry key="..\:/Users/zi/AndroidStudioProjects/Storage Data/app/src/main/res/menu/popup_menu.xml" value="0.36666666666666664" />
         <entry key="..\:/Users/zi/AndroidStudioProjects/Task1/app/src/main/res/drawable/ripple_bg.xml" value="0.196" />
         <entry key="..\:/Users/zi/AndroidStudioProjects/Task1/app/src/main/res/layout/activity_image_slider.xml" value="0.17831813576494426" />
         <entry key="..\:/Users/zi/AndroidStudioProjects/Task1/app/src/main/res/layout/activity_main.xml" value="0.15" />

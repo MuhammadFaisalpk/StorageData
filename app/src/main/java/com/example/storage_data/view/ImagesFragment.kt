@@ -5,26 +5,25 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
 import com.example.storage_data.adapter.ImagesListAdapter
 import com.example.storage_data.databinding.FragmentImagesBinding
+import com.example.storage_data.utils.DeleteInterface
 import com.example.storage_data.viewModel.ViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 
-class ImagesFragment : Fragment() {
+class ImagesFragment : Fragment(), DeleteInterface {
 
     private lateinit var viewModal: ViewModel
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
-    lateinit var imagesListAdapter: ImagesListAdapter
+    var imagesListAdapter: ImagesListAdapter = ImagesListAdapter(this)
     private lateinit var binding: FragmentImagesBinding
 
     override fun onCreateView(
@@ -39,13 +38,19 @@ class ImagesFragment : Fragment() {
         )
 
         initViews()
-
-        // Launch a coroutine that by default goes to the main thread
-        GlobalScope.launch(Dispatchers.Main) {
-            getAllItems()
-        }
+        getAllItems()
 
         return binding.root
+    }
+
+    fun gridChangeMethod() {
+        val isSwitched: Boolean = imagesListAdapter.toggleItemViewType()
+        recyclerView.layoutManager =
+            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
+                context,
+                2
+            )
+//        imagesListAdapter.notifyDataSetChanged()
     }
 
     private fun initViews() {
@@ -53,13 +58,13 @@ class ImagesFragment : Fragment() {
         recyclerView = binding.recyclerView
         progressBar = binding.progressBar
 
-        imagesListAdapter = ImagesListAdapter(this)
-        recyclerView.adapter = imagesListAdapter
-
         recyclerView.layoutManager = LinearLayoutManager(
             activity,
             RecyclerView.VERTICAL, false
         )
+
+//        imagesListAdapter = ImagesListAdapter(this)
+        recyclerView.adapter = imagesListAdapter
     }
 
     private fun getAllItems() {
@@ -75,5 +80,17 @@ class ImagesFragment : Fragment() {
                 imagesListAdapter.setListItems(it)
             }
         }
+    }
+
+    override fun gridButtonClick(currentFragment: Fragment) {
+        Toast.makeText(currentFragment.context, "Done $currentFragment", Toast.LENGTH_SHORT)
+            .show()
+//        val isSwitched: Boolean = imagesListAdapter.toggleItemViewType()
+//        recyclerView.layoutManager =
+//            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
+//                context,
+//                2
+//            )
+//        imagesListAdapter.notifyDataSetChanged()
     }
 }

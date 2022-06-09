@@ -30,15 +30,18 @@ class VideosListAdapter(private val context: Fragment) :
     var items: ArrayList<Videos>? = null
     var newItem: Videos? = null
     private var newPosition = 0
+    private val LIST_ITEM = 0
+    private val GRID_ITEM = 1
+    var isSwitchView = true
 
     // create new views
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        // inflates the card_view_design view
-        // that is used to hold list item
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.images_list_design, parent, false)
-
-        return ViewHolder(view)
+        val itemView: View = if (viewType == LIST_ITEM) {
+            LayoutInflater.from(parent.context).inflate(R.layout.images_list_design, parent, false)
+        } else {
+            LayoutInflater.from(parent.context).inflate(R.layout.images_grid_design, parent, false)
+        }
+        return ViewHolder(itemView)
     }
 
     // binds the list items to a view
@@ -108,102 +111,100 @@ class VideosListAdapter(private val context: Fragment) :
     }
 
     private fun renameFunction(position: Int) {
-        val dialog = context.context?.let { Dialog(it) }
-        if (dialog != null) {
-            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-            dialog.setCancelable(true)
+        val dialog = Dialog(context.requireContext(), R.style.Theme_Dialog)
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setCancelable(true)
 
-            dialog.setContentView(R.layout.rename_dialog_design)
-            val name = dialog.findViewById(R.id.name) as EditText
-            val ok = dialog.findViewById(R.id.ok) as Button
-            ok.setOnClickListener {
-                val newName = name.text.toString()
-                if (newName.isNotEmpty()) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        val currentFile = items?.get(position)?.path?.let { File(it) }
-                        if (currentFile != null) {
-                            if (currentFile.exists() && newName.toString()
-                                    .isNotEmpty()
-                            ) {
-                                val newFile = File(
-                                    currentFile.parentFile,
-                                    newName.toString() + "." + currentFile.extension
+        dialog.setContentView(R.layout.rename_dialog_design)
+        val name = dialog.findViewById(R.id.name) as EditText
+        val ok = dialog.findViewById(R.id.ok) as Button
+        ok.setOnClickListener {
+            val newName = name.text.toString()
+            if (newName.isNotEmpty()) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    val currentFile = items?.get(position)?.path?.let { File(it) }
+                    if (currentFile != null) {
+                        if (currentFile.exists() && newName.toString()
+                                .isNotEmpty()
+                        ) {
+                            val newFile = File(
+                                currentFile.parentFile,
+                                newName.toString() + "." + currentFile.extension
+                            )
+
+                            val fromUri = Uri.withAppendedPath(
+                                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                                items?.get(position)?.id
+                            )
+
+                            ContentValues().also {
+                                it.put(MediaStore.Files.FileColumns.IS_PENDING, 1)
+                                context.requireContext().contentResolver.update(
+                                    fromUri,
+                                    it,
+                                    null,
+                                    null
                                 )
+                                it.clear()
 
-                                val fromUri = Uri.withAppendedPath(
-                                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                                    items?.get(position)?.id
+                                //updating file details
+                                it.put(
+                                    MediaStore.Files.FileColumns.DISPLAY_NAME,
+                                    newName.toString()
                                 )
-
-                                ContentValues().also {
-                                    it.put(MediaStore.Files.FileColumns.IS_PENDING, 1)
-                                    context.requireContext().contentResolver.update(
-                                        fromUri,
-                                        it,
-                                        null,
-                                        null
-                                    )
-                                    it.clear()
-
-                                    //updating file details
-                                    it.put(
-                                        MediaStore.Files.FileColumns.DISPLAY_NAME,
-                                        newName.toString()
-                                    )
-                                    it.put(MediaStore.Files.FileColumns.IS_PENDING, 0)
-                                    context.requireContext().contentResolver.update(
-                                        fromUri,
-                                        it,
-                                        null,
-                                        null
-                                    )
-                                }
-
-                                updateRenameUI(
-                                    newItem,
-                                    position,
-                                    newName = newName.toString(),
-                                    newFile = newFile
-                                )
-                            }
-                        }
-                        dialog.dismiss()
-                    } else {
-                        val currentFile = items?.get(position)?.path?.let { it1 -> File(it1) }
-                        if (currentFile != null) {
-                            if (currentFile.exists() && newName.toString()
-                                    .isNotEmpty()
-                            ) {
-                                val newFile = File(
-                                    currentFile.parentFile,
-                                    newName.toString() + "." + currentFile.extension
-                                )
-                                if (currentFile.renameTo(newFile)) {
-                                    MediaScannerConnection.scanFile(
-                                        context.context,
-                                        arrayOf(newFile.toString()),
-                                        arrayOf("video/*"),
-                                        null
-                                    )
-                                }
-                                updateRenameUI(
-                                    newItem,
-                                    position = position,
-                                    newName = newName.toString(),
-                                    newFile = newFile
+                                it.put(MediaStore.Files.FileColumns.IS_PENDING, 0)
+                                context.requireContext().contentResolver.update(
+                                    fromUri,
+                                    it,
+                                    null,
+                                    null
                                 )
                             }
 
+                            updateRenameUI(
+                                newItem,
+                                position,
+                                newName = newName.toString(),
+                                newFile = newFile
+                            )
                         }
-                        dialog.dismiss()
                     }
+                    dialog.dismiss()
                 } else {
-                    name.error = "Field required."
-                }
-            }
+                    val currentFile = items?.get(position)?.path?.let { it1 -> File(it1) }
+                    if (currentFile != null) {
+                        if (currentFile.exists() && newName.toString()
+                                .isNotEmpty()
+                        ) {
+                            val newFile = File(
+                                currentFile.parentFile,
+                                newName.toString() + "." + currentFile.extension
+                            )
+                            if (currentFile.renameTo(newFile)) {
+                                MediaScannerConnection.scanFile(
+                                    context.context,
+                                    arrayOf(newFile.toString()),
+                                    arrayOf("video/*"),
+                                    null
+                                )
+                            }
+                            updateRenameUI(
+                                newItem,
+                                position = position,
+                                newName = newName.toString(),
+                                newFile = newFile
+                            )
+                        }
 
-            dialog.show()
+                    }
+                    dialog.dismiss()
+                }
+            } else {
+                name.error = "Field required."
+            }
         }
+
+        dialog.show()
     }
 
     private fun updateRenameUI(newItem: Videos?, position: Int, newName: String, newFile: File) {
@@ -288,6 +289,19 @@ class VideosListAdapter(private val context: Fragment) :
         } else {
             0
         }
+    }
+
+    override fun getItemViewType(position: Int): Int {
+        return if (isSwitchView) {
+            LIST_ITEM
+        } else {
+            GRID_ITEM
+        }
+    }
+
+    fun toggleItemViewType(): Boolean {
+        isSwitchView = !isSwitchView
+        return isSwitchView
     }
 
     fun setListItems(items: ArrayList<Videos>) {
