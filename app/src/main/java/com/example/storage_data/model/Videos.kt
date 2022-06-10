@@ -5,13 +5,12 @@ import android.os.Parcel
 import android.os.Parcelable
 
 data class Videos(
-    val id: String?, var title: String?, val duration: Long = 0,
-    val folderName: String?, val size: String?, var path: String?, var artUri: Uri?
+    val id: String?, var title: String?, val folderName: String?,
+    val size: String?, var path: String?, var artUri: Uri?
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString(),
         parcel.readString(),
-        parcel.readLong(),
         parcel.readString(),
         parcel.readString(),
         parcel.readString(),
@@ -21,7 +20,6 @@ data class Videos(
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(id)
         parcel.writeString(title)
-        parcel.writeLong(duration)
         parcel.writeString(folderName)
         parcel.writeString(size)
         parcel.writeString(path)

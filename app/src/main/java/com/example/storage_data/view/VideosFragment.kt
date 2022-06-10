@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -15,10 +14,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
 import com.example.storage_data.adapter.VideosListAdapter
 import com.example.storage_data.databinding.FragmentVideosBinding
+import com.example.storage_data.utils.Interface
+import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
+import java.util.concurrent.Executors
 
 
-class VideosFragment : Fragment() {
+class VideosFragment : Fragment(), Interface {
 
     private lateinit var viewModal: ViewModel
     lateinit var videosListAdapter: VideosListAdapter
@@ -47,23 +49,21 @@ class VideosFragment : Fragment() {
         recyclerView = binding.recyclerView
         progressBar = binding.progressBar
 
-        videosListAdapter = VideosListAdapter(this)
-        recyclerView.adapter = videosListAdapter
-
         recyclerView.layoutManager = LinearLayoutManager(
             activity,
             RecyclerView.VERTICAL, false
         )
+
+        videosListAdapter = VideosListAdapter(this)
+        recyclerView.adapter = videosListAdapter
+
     }
 
-    fun gridChangeMethod() {
-        val isSwitched: Boolean = videosListAdapter.toggleItemViewType()
-        recyclerView.layoutManager =
-            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
-                context,
-                2
-            )
-//        imagesListAdapter.notifyDataSetChanged()
+    override fun onResume() {
+        super.onResume()
+
+        val isSwitched: Boolean = videosListAdapter.getItemViewType()
+        (activity as? ViewTypeInterface)?.setDrawableRes(isSwitched)
     }
 
     private fun getAllItems() {
@@ -79,5 +79,17 @@ class VideosFragment : Fragment() {
                 videosListAdapter.setListItems(list)
             }
         }
+    }
+
+    override fun gridButtonClick() {
+        val isSwitched: Boolean = videosListAdapter.toggleItemViewType()
+        recyclerView.layoutManager =
+            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
+                context,
+                3
+            )
+        val isSwitched1: Boolean = videosListAdapter.getItemViewType()
+
+        (activity as? ViewTypeInterface)?.setDrawableRes(isSwitched1)
     }
 }

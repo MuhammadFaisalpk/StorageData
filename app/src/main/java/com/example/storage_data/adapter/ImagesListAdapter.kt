@@ -1,12 +1,9 @@
 package com.example.storage_data.adapter
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.app.Dialog
 import android.content.ContentValues
 import android.content.Intent
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -21,7 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.example.storage_data.ImageSliderActivity
+import com.example.storage_data.view.ImageSliderActivity
 import com.example.storage_data.R
 import com.example.storage_data.model.Images
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -60,8 +57,7 @@ class ImagesListAdapter(private val context: Fragment) :
 
             Glide.with(context)
                 .load(imagePath)
-                .diskCacheStrategy(DiskCacheStrategy.NONE)
-                .skipMemoryCache(true)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(holder.imageHolder)
 
             holder.itemView.setOnClickListener() {
@@ -114,6 +110,10 @@ class ImagesListAdapter(private val context: Fragment) :
         return isSwitchView
     }
 
+    fun getItemViewType(): Boolean {
+        return isSwitchView
+    }
+
     private fun requestWriteR() {
         //files to modify
         val uriList: List<Uri> = listOf(
@@ -141,6 +141,8 @@ class ImagesListAdapter(private val context: Fragment) :
 
         dialog.setContentView(R.layout.rename_dialog_design)
         val name = dialog.findViewById(R.id.name) as EditText
+        name.setText(items?.get(position)?.title)
+
         val ok = dialog.findViewById(R.id.ok) as Button
         ok.setOnClickListener {
             val newName = name.text.toString()
@@ -308,7 +310,8 @@ class ImagesListAdapter(private val context: Fragment) :
 
     private fun deleteFromList(position: Int) {
         items?.removeAt(position)
-        notifyItemChanged(position)
+        notifyDataSetChanged()
+//        notifyItemChanged(position )
     }
 
     fun setListItems(items: ArrayList<Images>) {

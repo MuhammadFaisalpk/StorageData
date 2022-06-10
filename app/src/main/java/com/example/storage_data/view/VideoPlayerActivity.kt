@@ -1,4 +1,4 @@
-package com.example.storage_data
+package com.example.storage_data.view
 
 import android.os.Bundle
 import android.widget.MediaController
@@ -6,6 +6,7 @@ import android.widget.TextView
 import android.widget.VideoView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
+import com.example.storage_data.R
 import com.example.storage_data.databinding.ActivityVideoPlayerBinding
 import com.example.storage_data.model.Videos
 

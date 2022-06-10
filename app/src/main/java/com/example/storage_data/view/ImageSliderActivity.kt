@@ -1,10 +1,11 @@
-package com.example.storage_data
+package com.example.storage_data.view
 
 import android.os.Bundle
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.viewpager2.widget.ViewPager2
+import com.example.storage_data.R
 import com.example.storage_data.adapter.ImagesPagerAdapter
 import com.example.storage_data.databinding.ActivityImageSliderBinding
 import com.example.storage_data.model.Images

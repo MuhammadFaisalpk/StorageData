@@ -1,30 +1,40 @@
 package com.example.storage_data.view
 
+import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.Target
 import com.example.storage_data.R
 import com.example.storage_data.adapter.ImagesListAdapter
 import com.example.storage_data.databinding.FragmentImagesBinding
-import com.example.storage_data.utils.DeleteInterface
+import com.example.storage_data.model.Images
+import com.example.storage_data.utils.Interface
+import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class ImagesFragment : Fragment(), DeleteInterface {
+
+class ImagesFragment : Fragment(), Interface {
 
     private lateinit var viewModal: ViewModel
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
-    var imagesListAdapter: ImagesListAdapter = ImagesListAdapter(this)
+    lateinit var imagesListAdapter: ImagesListAdapter
     private lateinit var binding: FragmentImagesBinding
+    private lateinit var array: ArrayList<Images>
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -43,16 +53,6 @@ class ImagesFragment : Fragment(), DeleteInterface {
         return binding.root
     }
 
-    fun gridChangeMethod() {
-        val isSwitched: Boolean = imagesListAdapter.toggleItemViewType()
-        recyclerView.layoutManager =
-            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
-                context,
-                2
-            )
-//        imagesListAdapter.notifyDataSetChanged()
-    }
-
     private fun initViews() {
 
         recyclerView = binding.recyclerView
@@ -63,8 +63,16 @@ class ImagesFragment : Fragment(), DeleteInterface {
             RecyclerView.VERTICAL, false
         )
 
-//        imagesListAdapter = ImagesListAdapter(this)
+        imagesListAdapter = ImagesListAdapter(this)
         recyclerView.adapter = imagesListAdapter
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val isSwitched: Boolean = imagesListAdapter.getItemViewType()
+        (activity as? ViewTypeInterface)?.setDrawableRes(isSwitched)
     }
 
     private fun getAllItems() {
@@ -73,24 +81,37 @@ class ImagesFragment : Fragment(), DeleteInterface {
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         ).get(ViewModel::class.java)
 
-        viewModal.getAllImages().observe(viewLifecycleOwner) { list ->
-            list?.let {
-                //on below line we are updating our list.
-                progressBar.visibility = View.GONE
-                imagesListAdapter.setListItems(it)
+//        viewModal.getAllImages().observe(viewLifecycleOwner) { list ->
+//            list?.let {
+//                array = list
+//                progressBar.visibility = View.GONE
+//                imagesListAdapter.setListItems(array)
+//            }
+//        }
+
+        GlobalScope.launch(Dispatchers.IO) {
+            // do some background task
+            withContext(Dispatchers.Main) {
+                viewModal.getAllImages().observe(viewLifecycleOwner) { list ->
+                    list?.let {
+                        array = list
+                        // Call to UI thread
+                        progressBar.visibility = View.GONE
+                        imagesListAdapter.setListItems(array)
+                    }
+                }
             }
         }
     }
 
-    override fun gridButtonClick(currentFragment: Fragment) {
-        Toast.makeText(currentFragment.context, "Done $currentFragment", Toast.LENGTH_SHORT)
-            .show()
-//        val isSwitched: Boolean = imagesListAdapter.toggleItemViewType()
-//        recyclerView.layoutManager =
-//            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
-//                context,
-//                2
-//            )
-//        imagesListAdapter.notifyDataSetChanged()
+    override fun gridButtonClick() {
+        val isSwitched: Boolean = imagesListAdapter.toggleItemViewType()
+        recyclerView.layoutManager =
+            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
+                context,
+                3
+            )
+        val isSwitched1: Boolean = imagesListAdapter.getItemViewType()
+        (activity as? ViewTypeInterface)?.setDrawableRes(isSwitched1)
     }
 }

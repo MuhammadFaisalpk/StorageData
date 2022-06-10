@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.ContentValues
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -17,8 +18,9 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.request.target.Target
 import com.example.storage_data.R
-import com.example.storage_data.VideoPlayerActivity
+import com.example.storage_data.view.VideoPlayerActivity
 import com.example.storage_data.model.Videos
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
@@ -53,10 +55,10 @@ class VideosListAdapter(private val context: Fragment) :
             holder.fnameHolder.text = items?.get(position)?.folderName
 
             val imagePath: String? = items?.get(position)?.path
+
             Glide.with(context)
                 .load(imagePath)
-                .diskCacheStrategy(DiskCacheStrategy.NONE)
-                .skipMemoryCache(true)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(holder.imageHolder)
 
 
@@ -117,6 +119,8 @@ class VideosListAdapter(private val context: Fragment) :
 
         dialog.setContentView(R.layout.rename_dialog_design)
         val name = dialog.findViewById(R.id.name) as EditText
+        name.setText(items?.get(position)?.title)
+
         val ok = dialog.findViewById(R.id.ok) as Button
         ok.setOnClickListener {
             val newName = name.text.toString()
@@ -212,7 +216,6 @@ class VideosListAdapter(private val context: Fragment) :
         var newItem = Videos(
             newItem?.id,
             newName,
-            newItem?.duration!!,
             newItem?.folderName,
             newItem?.size,
             newFile.path,
@@ -273,7 +276,12 @@ class VideosListAdapter(private val context: Fragment) :
 
     private fun deleteFromList(position: Int) {
         items?.removeAt(position)
-        notifyItemChanged(position)
+        notifyDataSetChanged()
+//        notifyItemChanged(position)
+    }
+
+    fun getItemViewType(): Boolean {
+        return isSwitchView
     }
 
     fun onResult(requestCode: Int) {

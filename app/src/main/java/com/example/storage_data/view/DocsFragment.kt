@@ -1,22 +1,12 @@
 package com.example.storage_data.view
 
-import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
-import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
-import android.widget.Toast
-import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,10 +14,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
 import com.example.storage_data.adapter.DocsListAdapter
 import com.example.storage_data.databinding.FragmentDocsBinding
+import com.example.storage_data.utils.Interface
+import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
+import java.util.concurrent.Executors
 
 
-class DocsFragment : Fragment() {
+class DocsFragment : Fragment(), Interface {
 
     private lateinit var viewModal: ViewModel
     lateinit var docsListAdapter: DocsListAdapter
@@ -52,28 +45,25 @@ class DocsFragment : Fragment() {
         return binding.root
     }
 
-    fun gridChangeMethod() {
-        val isSwitched: Boolean = docsListAdapter.toggleItemViewType()
-        recyclerView.layoutManager =
-            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
-                context,
-                2
-            )
-//        imagesListAdapter.notifyDataSetChanged()
-    }
-
     private fun initViews() {
 
         recyclerView = binding.recyclerView
         progressBar = binding.progressBar
 
-        docsListAdapter = DocsListAdapter(this)
-        recyclerView.adapter = docsListAdapter
-
         recyclerView.layoutManager = LinearLayoutManager(
             activity,
             RecyclerView.VERTICAL, false
         )
+
+        docsListAdapter = DocsListAdapter(this)
+        recyclerView.adapter = docsListAdapter
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val isSwitched: Boolean = docsListAdapter.getItemViewType()
+        (activity as? ViewTypeInterface)?.setDrawableRes(isSwitched)
     }
 
     private fun getAllItems() {
@@ -86,8 +76,19 @@ class DocsFragment : Fragment() {
             list?.let {
                 //on below line we are updating our list.
                 progressBar.visibility = View.GONE
-                docsListAdapter.setListItems(it)
+                docsListAdapter.setListItems(list)
             }
         }
+    }
+
+    override fun gridButtonClick() {
+        val isSwitched: Boolean = docsListAdapter.toggleItemViewType()
+        recyclerView.layoutManager =
+            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
+                context,
+                3
+            )
+        val isSwitched1: Boolean = docsListAdapter.getItemViewType()
+        (activity as? ViewTypeInterface)?.setDrawableRes(isSwitched1)
     }
 }

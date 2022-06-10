@@ -81,6 +81,8 @@ class DocsListAdapter(private val context: Fragment) :
 
         dialog.setContentView(R.layout.rename_dialog_design)
         val name = dialog.findViewById(R.id.name) as EditText
+        name.setText(items?.get(position)?.title)
+
         val ok = dialog.findViewById(R.id.ok) as Button
         ok.setOnClickListener {
             val newName = name.text.toString()
@@ -217,7 +219,8 @@ class DocsListAdapter(private val context: Fragment) :
 
     private fun deleteFromList(position: Int) {
         items?.removeAt(position)
-        notifyItemChanged(position)
+        notifyDataSetChanged()
+//        notifyItemChanged(position)
     }
 
     fun onResult(requestCode: Int) {
@@ -241,6 +244,10 @@ class DocsListAdapter(private val context: Fragment) :
         } else {
             GRID_ITEM
         }
+    }
+
+    fun getItemViewType(): Boolean {
+        return isSwitchView
     }
 
     fun toggleItemViewType(): Boolean {

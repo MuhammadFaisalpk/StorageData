@@ -97,7 +97,6 @@ class Repository(private val application: Application) {
             MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
             MediaStore.Video.Media.DATA,
             MediaStore.Video.Media.DATE_ADDED,
-            MediaStore.Video.Media.DURATION,
             MediaStore.Video.Media.BUCKET_ID
         )
         val orderBy = MediaStore.Video.Media.DATE_TAKEN //order data by date
@@ -123,8 +122,6 @@ class Repository(private val application: Application) {
                     cursor.getColumnIndex(MediaStore.Video.Media.BUCKET_ID)
                 val SIZE: Int =
                     cursor.getColumnIndex(MediaStore.Video.Media.SIZE)
-                val DURATION: Int =
-                    cursor.getColumnIndex(MediaStore.Video.Media.DURATION)
 
                 val id: String = cursor.getString(ID)
                 val path: String = cursor.getString(DATA)
@@ -132,7 +129,6 @@ class Repository(private val application: Application) {
                 val folderName: String? = cursor.getString(BUCKET_DISPLAY_NAME)
                 val folderID: String = cursor.getString(BUCKET_ID)
                 val size: String = cursor.getString(SIZE)
-                val duration: Long = cursor.getString(DURATION).toLong()
 
                 val file = File(path)
                 val artUriC = Uri.fromFile(file)
@@ -141,7 +137,6 @@ class Repository(private val application: Application) {
                     Videos(
                         id,
                         title,
-                        duration,
                         folderName,
                         size,
                         path,
