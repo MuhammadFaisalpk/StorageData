@@ -13,18 +13,22 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.*
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.IntentSenderRequest
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.example.storage_data.view.ImageSliderActivity
 import com.example.storage_data.R
 import com.example.storage_data.model.Images
+import com.example.storage_data.view.ImageSliderActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
-class ImagesListAdapter(private val context: Fragment) :
+class ImagesListAdapter(
+    private val context: Fragment,
+) :
     RecyclerView.Adapter<ImagesListAdapter.ViewHolder>() {
 
     var items: ArrayList<Images>? = null
@@ -76,9 +80,9 @@ class ImagesListAdapter(private val context: Fragment) :
 
                     when (item.itemId) {
                         R.id.action_rename ->
-                            requestWriteR()
+                            renameFunction(newPosition)
                         R.id.action_delete ->
-                            requestDeleteR(it, images)
+                            deleteFunction(it, images)
                     }
                     true
                 }
@@ -114,28 +118,17 @@ class ImagesListAdapter(private val context: Fragment) :
         return isSwitchView
     }
 
-    private fun requestWriteR() {
-        //files to modify
-        val uriList: List<Uri> = listOf(
-            Uri.withAppendedPath(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                items?.get(newPosition)?.id
-            )
-        )
-        //requesting file write permission for specific files
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val pi =
-                MediaStore.createWriteRequest(context.requireContext().contentResolver, uriList)
-
-            (context.context as Activity).startIntentSenderForResult(
-                pi.intentSender, 126,
-                null, 0, 0, 0, null
-            )
-        } else renameFunction(newPosition)
+    fun onResult(requestCode: Int) {
+        when (requestCode) {
+            125 -> afterDeletePermission(newPosition)
+            126 -> afterRenamePermission(newPosition)
+        }
     }
 
+    private lateinit var newName: String
+
     private fun renameFunction(position: Int) {
-        val dialog = Dialog(context.requireContext(), R.style.Theme_Dialog)
+        val dialog = Dialog(context.requireContext(), android.R.style.Theme_Material_Light_Dialog_Alert)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.setCancelable(true)
 
@@ -145,56 +138,27 @@ class ImagesListAdapter(private val context: Fragment) :
 
         val ok = dialog.findViewById(R.id.ok) as Button
         ok.setOnClickListener {
-            val newName = name.text.toString()
+            newName = name.text.toString()
             if (newName.isNotEmpty()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    val currentFile = items?.get(position)?.path?.let { File(it) }
-                    if (currentFile != null) {
-                        if (currentFile.exists() && newName.toString()
-                                .isNotEmpty()
-                        ) {
-                            val newFile = File(
-                                currentFile.parentFile,
-                                newName.toString() + "." + currentFile.extension
-                            )
-
-                            val fromUri = Uri.withAppendedPath(
-                                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                                items?.get(position)?.id
-                            )
-                            ContentValues().also {
-                                it.put(MediaStore.Files.FileColumns.IS_PENDING, 1)
-                                context.requireContext().contentResolver.update(
-                                    fromUri,
-                                    it,
-                                    null,
-                                    null
-                                )
-                                it.clear()
-
-                                //updating file details
-                                it.put(
-                                    MediaStore.Files.FileColumns.DISPLAY_NAME,
-                                    newName.toString()
-                                )
-                                it.put(MediaStore.Files.FileColumns.IS_PENDING, 0)
-                                context.requireContext().contentResolver.update(
-                                    fromUri,
-                                    it,
-                                    null,
-                                    null
-                                )
-                            }
-
-                            updateRenameUI(
-                                newItem,
-                                position,
-                                newName = newName.toString(),
-                                newFile = newFile
-                            )
-                        }
-                    }
                     dialog.dismiss()
+
+                    val uriList: List<Uri> = listOf(
+                        Uri.withAppendedPath(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            items?.get(newPosition)?.id
+                        )
+                    )
+                    val pi =
+                        MediaStore.createWriteRequest(
+                            context.requireContext().contentResolver,
+                            uriList
+                        )
+
+                    (context.context as Activity).startIntentSenderForResult(
+                        pi.intentSender, 126,
+                        null, 0, 0, 0, null
+                    )
                 } else {
                     val currentFile = items?.get(position)?.path?.let { it1 -> File(it1) }
                     if (currentFile != null) {
@@ -233,6 +197,57 @@ class ImagesListAdapter(private val context: Fragment) :
         dialog.show()
     }
 
+    private fun afterRenamePermission(position: Int) {
+        //After dialog
+        val currentFile = items?.get(position)?.path?.let { File(it) }
+        if (currentFile != null) {
+            if (currentFile.exists() && newName.toString()
+                    .isNotEmpty()
+            ) {
+                val newFile = File(
+                    currentFile.parentFile,
+                    newName.toString() + "." + currentFile.extension
+                )
+
+                val fromUri = Uri.withAppendedPath(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    items?.get(position)?.id
+                )
+
+                ContentValues().also {
+                    it.put(MediaStore.Files.FileColumns.IS_PENDING, 1)
+                    context.requireContext().contentResolver.update(
+                        fromUri,
+                        it,
+                        null,
+                        null
+                    )
+                    it.clear()
+
+                    //updating file details
+                    it.put(
+                        MediaStore.Files.FileColumns.DISPLAY_NAME,
+                        newName.toString()
+                    )
+                    it.put(MediaStore.Files.FileColumns.IS_PENDING, 0)
+                    context.requireContext().contentResolver.update(
+                        fromUri,
+                        it,
+                        null,
+                        null
+                    )
+                }
+
+                updateRenameUI(
+                    newItem,
+                    position,
+                    newName = newName.toString(),
+                    newFile = newFile
+                )
+            }
+        }
+    }
+
     private fun updateRenameUI(
         newItem: Images?,
         position: Int,
@@ -252,7 +267,7 @@ class ImagesListAdapter(private val context: Fragment) :
         notifyItemChanged(position)
     }
 
-    private fun requestDeleteR(v: View?, images: Images?) {
+    private fun deleteFunction(v: View?, images: Images?) {
         //list of images to delete
         val uriList: List<Uri> = listOf(
             Uri.withAppendedPath(
@@ -289,7 +304,7 @@ class ImagesListAdapter(private val context: Fragment) :
                                     null,
                                     null
                                 )
-                                deleteFromList(newPosition)
+                                afterDeletePermission(newPosition)
                             }
                         }
                         self.dismiss()
@@ -301,14 +316,7 @@ class ImagesListAdapter(private val context: Fragment) :
         }
     }
 
-    fun onResult(requestCode: Int) {
-        when (requestCode) {
-            125 -> deleteFromList(newPosition)
-            126 -> renameFunction(newPosition)
-        }
-    }
-
-    private fun deleteFromList(position: Int) {
+    private fun afterDeletePermission(position: Int) {
         items?.removeAt(position)
         notifyDataSetChanged()
 //        notifyItemChanged(position )

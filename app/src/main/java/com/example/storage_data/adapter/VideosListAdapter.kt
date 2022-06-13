@@ -77,11 +77,11 @@ class VideosListAdapter(private val context: Fragment) :
 
                     when (item.itemId) {
                         R.id.action_rename -> {
-                            requestWriteR()
+                            renameFunction(newPosition)
                         }
                         R.id.action_delete -> {
                             if (videos != null) {
-                                requestDeleteVideo(it, videos)
+                                deleteFunction(it, videos)
                             }
                         }
                     }
@@ -94,27 +94,42 @@ class VideosListAdapter(private val context: Fragment) :
         }
     }
 
-    private fun requestWriteR() {
-        //files to modify
-        val uriList: List<Uri> = listOf(
-            Uri.withAppendedPath(
-                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                items?.get(newPosition)?.id
-            )
-        )
-        //requesting file write permission for specific files
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val pi =
-                MediaStore.createWriteRequest(context.requireContext().contentResolver, uriList)
-            (context.context as Activity).startIntentSenderForResult(
-                pi.intentSender, 124,
-                null, 0, 0, 0, null
-            )
-        } else renameFunction(newPosition)
+    override fun getItemCount(): Int {
+        return if (items != null) {
+            items!!.size
+        } else {
+            0
+        }
     }
 
+    override fun getItemViewType(position: Int): Int {
+        return if (isSwitchView) {
+            listItem
+        } else {
+            gridItem
+        }
+    }
+
+    fun toggleItemViewType(): Boolean {
+        isSwitchView = !isSwitchView
+        return isSwitchView
+    }
+
+    fun getItemViewType(): Boolean {
+        return isSwitchView
+    }
+
+    fun onResult(requestCode: Int) {
+        when (requestCode) {
+            123 -> afterDeletePermission(newPosition)
+            124 -> afterRenamePermission(newPosition)
+        }
+    }
+
+    private lateinit var newName: String
+
     private fun renameFunction(position: Int) {
-        val dialog = Dialog(context.requireContext(), R.style.Theme_Dialog)
+        val dialog = Dialog(context.requireContext(), android.R.style.Theme_Material_Light_Dialog_Alert)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.setCancelable(true)
 
@@ -124,57 +139,26 @@ class VideosListAdapter(private val context: Fragment) :
 
         val ok = dialog.findViewById(R.id.ok) as Button
         ok.setOnClickListener {
-            val newName = name.text.toString()
+            newName = name.text.toString()
             if (newName.isNotEmpty()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    val currentFile = items?.get(position)?.path?.let { File(it) }
-                    if (currentFile != null) {
-                        if (currentFile.exists() && newName.toString()
-                                .isNotEmpty()
-                        ) {
-                            val newFile = File(
-                                currentFile.parentFile,
-                                newName.toString() + "." + currentFile.extension
-                            )
-
-                            val fromUri = Uri.withAppendedPath(
-                                MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                                items?.get(position)?.id
-                            )
-
-                            ContentValues().also {
-                                it.put(MediaStore.Files.FileColumns.IS_PENDING, 1)
-                                context.requireContext().contentResolver.update(
-                                    fromUri,
-                                    it,
-                                    null,
-                                    null
-                                )
-                                it.clear()
-
-                                //updating file details
-                                it.put(
-                                    MediaStore.Files.FileColumns.DISPLAY_NAME,
-                                    newName.toString()
-                                )
-                                it.put(MediaStore.Files.FileColumns.IS_PENDING, 0)
-                                context.requireContext().contentResolver.update(
-                                    fromUri,
-                                    it,
-                                    null,
-                                    null
-                                )
-                            }
-
-                            updateRenameUI(
-                                newItem,
-                                position,
-                                newName = newName.toString(),
-                                newFile = newFile
-                            )
-                        }
-                    }
                     dialog.dismiss()
+
+                    val uriList: List<Uri> = listOf(
+                        Uri.withAppendedPath(
+                            MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                            items?.get(newPosition)?.id
+                        )
+                    )
+                    val pi =
+                        MediaStore.createWriteRequest(
+                            context.requireContext().contentResolver,
+                            uriList
+                        )
+                    (context.context as Activity).startIntentSenderForResult(
+                        pi.intentSender, 124,
+                        null, 0, 0, 0, null
+                    )
                 } else {
                     val currentFile = items?.get(position)?.path?.let { it1 -> File(it1) }
                     if (currentFile != null) {
@@ -212,6 +196,56 @@ class VideosListAdapter(private val context: Fragment) :
         dialog.show()
     }
 
+    private fun afterRenamePermission(position: Int) {
+        val currentFile = items?.get(position)?.path?.let { File(it) }
+        if (currentFile != null) {
+            if (currentFile.exists() && newName.toString()
+                    .isNotEmpty()
+            ) {
+                val newFile = File(
+                    currentFile.parentFile,
+                    newName.toString() + "." + currentFile.extension
+                )
+
+                val fromUri = Uri.withAppendedPath(
+                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                    items?.get(position)?.id
+                )
+
+                ContentValues().also {
+                    it.put(MediaStore.Files.FileColumns.IS_PENDING, 1)
+                    context.requireContext().contentResolver.update(
+                        fromUri,
+                        it,
+                        null,
+                        null
+                    )
+                    it.clear()
+
+                    //updating file details
+                    it.put(
+                        MediaStore.Files.FileColumns.DISPLAY_NAME,
+                        newName.toString()
+                    )
+                    it.put(MediaStore.Files.FileColumns.IS_PENDING, 0)
+                    context.requireContext().contentResolver.update(
+                        fromUri,
+                        it,
+                        null,
+                        null
+                    )
+                }
+
+                updateRenameUI(
+                    newItem,
+                    position,
+                    newName = newName.toString(),
+                    newFile = newFile
+                )
+            }
+        }
+    }
+
     private fun updateRenameUI(newItem: Videos?, position: Int, newName: String, newFile: File) {
 
         var newItem = Videos(
@@ -227,7 +261,7 @@ class VideosListAdapter(private val context: Fragment) :
         notifyItemChanged(position)
     }
 
-    private fun requestDeleteVideo(v: View?, item: Videos) {
+    private fun deleteFunction(v: View?, item: Videos) {
         //list of videos to delete
         val uriList: List<Uri> = listOf(
             Uri.withAppendedPath(
@@ -263,7 +297,7 @@ class VideosListAdapter(private val context: Fragment) :
                                     null,
                                     null
                                 )
-                                deleteFromList(newPosition)
+                                afterDeletePermission(newPosition)
                             }
                         }
                         self.dismiss()
@@ -275,42 +309,10 @@ class VideosListAdapter(private val context: Fragment) :
         }
     }
 
-    private fun deleteFromList(position: Int) {
+    private fun afterDeletePermission(position: Int) {
         items?.removeAt(position)
         notifyDataSetChanged()
 //        notifyItemChanged(position)
-    }
-
-    fun getItemViewType(): Boolean {
-        return isSwitchView
-    }
-
-    fun onResult(requestCode: Int) {
-        when (requestCode) {
-            123 -> deleteFromList(newPosition)
-            124 -> renameFunction(newPosition)
-        }
-    }
-
-    override fun getItemCount(): Int {
-        return if (items != null) {
-            items!!.size
-        } else {
-            0
-        }
-    }
-
-    override fun getItemViewType(position: Int): Int {
-        return if (isSwitchView) {
-            listItem
-        } else {
-            gridItem
-        }
-    }
-
-    fun toggleItemViewType(): Boolean {
-        isSwitchView = !isSwitchView
-        return isSwitchView
     }
 
     fun setListItems(items: ArrayList<Videos>) {

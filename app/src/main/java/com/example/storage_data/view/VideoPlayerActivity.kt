@@ -12,7 +12,7 @@ import com.example.storage_data.model.Videos
 
 class VideoPlayerActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityVideoPlayerBinding
+    private lateinit var binding:ActivityVideoPlayerBinding
     lateinit var videoView: VideoView
     lateinit var titleView: TextView
 

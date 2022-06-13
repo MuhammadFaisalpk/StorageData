@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -54,8 +55,11 @@ class DocsFragment : Fragment(), Interface {
             activity,
             RecyclerView.VERTICAL, false
         )
-
-        docsListAdapter = DocsListAdapter(this)
+         val resolutionForResult =
+            registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { activityResult ->
+                //do whatever you want with activity result...
+            }
+        docsListAdapter = DocsListAdapter(this,resolutionForResult)
         recyclerView.adapter = docsListAdapter
     }
 
