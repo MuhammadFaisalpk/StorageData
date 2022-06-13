@@ -17,7 +17,10 @@ import com.example.storage_data.databinding.FragmentVideosBinding
 import com.example.storage_data.utils.Interface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
-import java.util.concurrent.Executors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class VideosFragment : Fragment(), Interface {
@@ -70,15 +73,26 @@ class VideosFragment : Fragment(), Interface {
         viewModal = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
-        ).get(ViewModel::class.java)
+        )[ViewModel::class.java]
 
-        viewModal.getAllVideos().observe(viewLifecycleOwner) { list ->
-            list?.let {
-                //on below line we are updating our list.
-                progressBar.visibility = View.GONE
-                videosListAdapter.setListItems(list)
+        CoroutineScope(Dispatchers.IO).launch {
+            withContext(Dispatchers.Main) {
+                viewModal.getAllVideos().observe(viewLifecycleOwner) { list ->
+                    list?.let {
+                        // Call to UI thread
+                        progressBar.visibility = View.GONE
+                        videosListAdapter.setListItems(list)
+                    }
+                }
             }
         }
+//        viewModal.getAllVideos().observe(viewLifecycleOwner) { list ->
+//            list?.let {
+//                //on below line we are updating our list.
+//                progressBar.visibility = View.GONE
+//                videosListAdapter.setListItems(list)
+//            }
+//        }
     }
 
     override fun gridButtonClick() {

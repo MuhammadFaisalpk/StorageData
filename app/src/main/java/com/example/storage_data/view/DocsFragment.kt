@@ -17,6 +17,10 @@ import com.example.storage_data.databinding.FragmentDocsBinding
 import com.example.storage_data.utils.Interface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.Executors
 
 
@@ -70,15 +74,27 @@ class DocsFragment : Fragment(), Interface {
         viewModal = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
-        ).get(ViewModel::class.java)
+        )[ViewModel::class.java]
 
-        viewModal.getAllDocs().observe(viewLifecycleOwner) { list ->
-            list?.let {
-                //on below line we are updating our list.
-                progressBar.visibility = View.GONE
-                docsListAdapter.setListItems(list)
+        CoroutineScope(Dispatchers.IO).launch {
+            withContext(Dispatchers.Main) {
+                viewModal.getAllDocs().observe(viewLifecycleOwner) { list ->
+                    list?.let {
+                        // Call to UI thread
+                        progressBar.visibility = View.GONE
+                        docsListAdapter.setListItems(list)
+                    }
+                }
             }
         }
+
+//        viewModal.getAllDocs().observe(viewLifecycleOwner) { list ->
+//            list?.let {
+//                //on below line we are updating our list.
+//                progressBar.visibility = View.GONE
+//                docsListAdapter.setListItems(list)
+//            }
+//        }
     }
 
     override fun gridButtonClick() {

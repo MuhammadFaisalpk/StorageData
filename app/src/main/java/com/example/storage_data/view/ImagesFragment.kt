@@ -21,10 +21,7 @@ import com.example.storage_data.model.Images
 import com.example.storage_data.utils.Interface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 
 
 class ImagesFragment : Fragment(), Interface {
@@ -79,7 +76,7 @@ class ImagesFragment : Fragment(), Interface {
         viewModal = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
-        ).get(ViewModel::class.java)
+        )[ViewModel::class.java]
 
 //        viewModal.getAllImages().observe(viewLifecycleOwner) { list ->
 //            list?.let {
@@ -88,9 +85,7 @@ class ImagesFragment : Fragment(), Interface {
 //                imagesListAdapter.setListItems(array)
 //            }
 //        }
-
-        GlobalScope.launch(Dispatchers.IO) {
-            // do some background task
+        CoroutineScope(Dispatchers.IO).launch {
             withContext(Dispatchers.Main) {
                 viewModal.getAllImages().observe(viewLifecycleOwner) { list ->
                     list?.let {

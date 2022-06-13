@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.example.storage_data.model.Documents
 import com.example.storage_data.model.Images
 import com.example.storage_data.model.Videos
@@ -21,11 +22,12 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     init {
         repository = Repository(application)
 
-        allImages = repository.allLocalImages
-        allVideos = repository.allLocalVideos
-        allDocs = repository.allLocalDocs
+        viewModelScope.launch {
+            allImages = repository.fetchAllImages()
+            allVideos = repository.fetchAllVideos()
+            allDocs = repository.fetchAllDocs()
+        }
     }
-
 
     fun getAllImages(): LiveData<ArrayList<Images>> {
         return allImages

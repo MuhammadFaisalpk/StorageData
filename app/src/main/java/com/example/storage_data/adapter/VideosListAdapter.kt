@@ -20,6 +20,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.target.Target
 import com.example.storage_data.R
+import com.example.storage_data.model.Images
 import com.example.storage_data.view.VideoPlayerActivity
 import com.example.storage_data.model.Videos
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
