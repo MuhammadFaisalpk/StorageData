@@ -49,7 +49,6 @@ class ImagesListAdapter(
     }
 
     // binds the list items to a view
-    @RequiresApi(Build.VERSION_CODES.R)
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         try {
             val images = items?.get(position)

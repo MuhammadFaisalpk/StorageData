@@ -1,18 +1,17 @@
 package com.example.storage_data.repository
 
 import android.app.Application
+import android.content.ContentResolver
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
-import androidx.lifecycle.LiveData
+import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import com.example.storage_data.model.Documents
 import com.example.storage_data.model.Images
 import com.example.storage_data.model.Videos
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import java.io.File
 
 
@@ -145,7 +144,6 @@ class Repository(private val application: Application) {
 
     fun fetchAllDocs(): ArrayList<Documents> {
         val listDocuments: ArrayList<Documents> = ArrayList()
-        val mutableListDocuments = MutableLiveData<ArrayList<Documents>>()
 
         val projection = arrayOf(
             MediaStore.Files.FileColumns._ID,

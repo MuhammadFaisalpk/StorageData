@@ -1,11 +1,13 @@
 package com.example.storage_data.adapter
 
+import android.app.Activity
 import android.app.Dialog
-import android.app.RecoverableSecurityException
+import android.content.ContentUris
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.provider.MediaStore.VOLUME_INTERNAL
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -47,7 +49,6 @@ class DocsListAdapter(
     }
 
     // binds the list items to a view
-    @RequiresApi(Build.VERSION_CODES.R)
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         try {
             val document = items?.get(position)
@@ -206,6 +207,60 @@ class DocsListAdapter(
             .setNegativeButton("No") { self, _ -> self.dismiss() }
         val delDialog = builder.create()
         delDialog.show()
+    }
+
+    private fun nDeleteFunction(v: View?, docs: Documents?) {
+        val contentResolver = context.requireContext().contentResolver
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            //list of docs to delete
+            val uri = docs?.id?.let {
+                ContentUris.withAppendedId(
+                    MediaStore.Images.Media.getContentUri(
+                        VOLUME_INTERNAL
+                    ), it.toLong()
+                )
+            }
+
+            val uriList: List<Uri> = listOf(uri) as List<Uri>
+            //requesting for delete permission
+            val pi =
+                MediaStore.createDeleteRequest(
+                    contentResolver,
+                    uriList
+                )
+            if (v != null) {
+                (v.context as Activity).startIntentSenderForResult(
+                    pi.intentSender, 127,
+                    null, 0, 0, 0, null
+                )
+            }
+        } else {
+            //for devices less than android 11
+            if (v != null) {
+                val file = docs?.path?.let { File(it) }
+                val builder = MaterialAlertDialogBuilder(v.context)
+                builder.setTitle("Delete Document?")
+                    .setMessage(docs?.title)
+                    .setPositiveButton("Yes") { self, _ ->
+                        if (file != null) {
+                            if (file.exists() && file.delete()) {
+                                MediaScannerConnection.scanFile(
+                                    v.context,
+                                    arrayOf(file.path),
+                                    null,
+                                    null
+                                )
+                                afterDeletePermission(newPosition)
+                            }
+                        }
+                        self.dismiss()
+                    }
+                    .setNegativeButton("No") { self, _ -> self.dismiss() }
+                val delDialog = builder.create()
+                delDialog.show()
+            }
+        }
     }
 
     private fun afterDeletePermission(position: Int) {
