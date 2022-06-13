@@ -29,13 +29,13 @@ class DocsListAdapter(private val context: Fragment) :
     var items: ArrayList<Documents>? = null
     var newItem: Documents? = null
     private var newPosition = 0
-    private val LIST_ITEM = 0
-    private val GRID_ITEM = 1
+    private val listItem = 0
+    private val gridItem = 1
     var isSwitchView = true
 
     // create new views
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val itemView: View = if (viewType == LIST_ITEM) {
+        val itemView: View = if (viewType == listItem) {
             LayoutInflater.from(parent.context).inflate(R.layout.images_list_design, parent, false)
         } else {
             LayoutInflater.from(parent.context).inflate(R.layout.images_grid_design, parent, false)
@@ -177,7 +177,9 @@ class DocsListAdapter(private val context: Fragment) :
         dialog.show()
     }
 
-    private fun updateRenameUI(newItem: Documents?, position: Int, newName: String, newFile: File) {
+    private fun updateRenameUI(
+        newItem: Documents?, position: Int, newName: String, newFile: File
+    ) {
 
         var newItem = Documents(
             newItem?.id,
@@ -186,8 +188,8 @@ class DocsListAdapter(private val context: Fragment) :
             newFile.path,
             Uri.fromFile(newFile)
         )
-        items?.removeAt(newPosition)
-        items?.add(newPosition, newItem)
+        items?.removeAt(position)
+        items?.add(position, newItem)
         notifyItemChanged(position)
     }
 
@@ -240,9 +242,9 @@ class DocsListAdapter(private val context: Fragment) :
 
     override fun getItemViewType(position: Int): Int {
         return if (isSwitchView) {
-            LIST_ITEM
+            listItem
         } else {
-            GRID_ITEM
+            gridItem
         }
     }
 

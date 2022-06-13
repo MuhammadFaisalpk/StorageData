@@ -14,14 +14,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
 import com.example.storage_data.adapter.DocsListAdapter
 import com.example.storage_data.databinding.FragmentDocsBinding
+import com.example.storage_data.model.Documents
 import com.example.storage_data.utils.Interface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.concurrent.Executors
 
 
 class DocsFragment : Fragment(), Interface {
@@ -76,25 +72,12 @@ class DocsFragment : Fragment(), Interface {
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         )[ViewModel::class.java]
 
-        CoroutineScope(Dispatchers.IO).launch {
-            withContext(Dispatchers.Main) {
-                viewModal.getAllDocs().observe(viewLifecycleOwner) { list ->
-                    list?.let {
-                        // Call to UI thread
-                        progressBar.visibility = View.GONE
-                        docsListAdapter.setListItems(list)
-                    }
-                }
-            }
+        viewModal.getDocs().observe(viewLifecycleOwner) { paths ->
+            // update UI
+            progressBar.visibility = View.GONE
+            docsListAdapter.setListItems(paths as ArrayList<Documents>)
         }
-
-//        viewModal.getAllDocs().observe(viewLifecycleOwner) { list ->
-//            list?.let {
-//                //on below line we are updating our list.
-//                progressBar.visibility = View.GONE
-//                docsListAdapter.setListItems(list)
-//            }
-//        }
+        viewModal.loadDocs()
     }
 
     override fun gridButtonClick() {
@@ -104,7 +87,7 @@ class DocsFragment : Fragment(), Interface {
                 context,
                 3
             )
-        val isSwitched1: Boolean = docsListAdapter.getItemViewType()
-        (activity as? ViewTypeInterface)?.setDrawableRes(isSwitched1)
+        val getSwitchCheck: Boolean = docsListAdapter.getItemViewType()
+        (activity as? ViewTypeInterface)?.setDrawableRes(getSwitchCheck)
     }
 }

@@ -1,6 +1,5 @@
 package com.example.storage_data.view
 
-import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -12,8 +11,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.Target
 import com.example.storage_data.R
 import com.example.storage_data.adapter.ImagesListAdapter
 import com.example.storage_data.databinding.FragmentImagesBinding
@@ -21,7 +18,6 @@ import com.example.storage_data.model.Images
 import com.example.storage_data.utils.Interface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
-import kotlinx.coroutines.*
 
 
 class ImagesFragment : Fragment(), Interface {
@@ -78,25 +74,13 @@ class ImagesFragment : Fragment(), Interface {
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         )[ViewModel::class.java]
 
-//        viewModal.getAllImages().observe(viewLifecycleOwner) { list ->
-//            list?.let {
-//                array = list
-//                progressBar.visibility = View.GONE
-//                imagesListAdapter.setListItems(array)
-//            }
-//        }
-        CoroutineScope(Dispatchers.IO).launch {
-            withContext(Dispatchers.Main) {
-                viewModal.getAllImages().observe(viewLifecycleOwner) { list ->
-                    list?.let {
-                        array = list
-                        // Call to UI thread
-                        progressBar.visibility = View.GONE
-                        imagesListAdapter.setListItems(array)
-                    }
-                }
-            }
+        viewModal.getImages().observe(viewLifecycleOwner) { paths ->
+            // update UI
+            array = paths as ArrayList<Images>
+            progressBar.visibility = View.GONE
+            imagesListAdapter.setListItems(array)
         }
+        viewModal.loadImages()
     }
 
     override fun gridButtonClick() {
@@ -106,7 +90,7 @@ class ImagesFragment : Fragment(), Interface {
                 context,
                 3
             )
-        val isSwitched1: Boolean = imagesListAdapter.getItemViewType()
-        (activity as? ViewTypeInterface)?.setDrawableRes(isSwitched1)
+        val getSwitchCheck: Boolean = imagesListAdapter.getItemViewType()
+        (activity as? ViewTypeInterface)?.setDrawableRes(getSwitchCheck)
     }
 }

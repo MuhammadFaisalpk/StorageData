@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
     private val adapter = AdapterTabPager(this)
     private lateinit var currentFragment: Fragment
 
-    private var listofFragment = arrayOf(
+    private var listFragments = arrayOf(
         ImagesFragment(),
         VideosFragment(), DocsFragment()
     )
@@ -75,7 +75,7 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         gridChange = binding.gridChange
 
         gridChange.setOnClickListener() {
-            currentFragment = listofFragment[viewPager.currentItem] as Fragment
+            currentFragment = listFragments[viewPager.currentItem] as Fragment
             (currentFragment as Interface).gridButtonClick()
         }
     }
@@ -112,8 +112,8 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
     }
 
     private fun setStatePageAdapter() {
-        for (item in listofFragment.indices) {
-            adapter.addFragment(listofFragment[item] as Fragment, fragmentNames[item])
+        for (item in listFragments.indices) {
+            adapter.addFragment(listFragments[item] as Fragment, fragmentNames[item])
         }
         viewPager.adapter = adapter
         viewPager.currentItem = 0
@@ -126,14 +126,15 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
     private fun tabLayoutListener() {
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
-                viewPager.currentItem = tab.position
-                val fm = supportFragmentManager
-                val ft = fm.beginTransaction()
-                val count = fm.backStackEntryCount
-                if (count >= 1) {
-                    supportFragmentManager.popBackStack()
-                }
-                ft.commit()
+                viewPager.currentItem = tab.position;
+
+//                val fm = supportFragmentManager
+//                val ft = fm.beginTransaction()
+//                val count = fm.backStackEntryCount
+//                if (count >= 1) {
+//                    supportFragmentManager.popBackStack()
+//                }
+//                ft.commit()
 
             }
 

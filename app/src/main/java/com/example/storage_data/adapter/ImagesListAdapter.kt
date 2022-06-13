@@ -30,13 +30,13 @@ class ImagesListAdapter(private val context: Fragment) :
     var items: ArrayList<Images>? = null
     private var newPosition = 0
     var newItem: Images? = null
-    private val LIST_ITEM = 0
-    private val GRID_ITEM = 1
+    private val listItem = 0
+    private val gridItem = 1
     var isSwitchView = true
 
     // create new views
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val itemView: View = if (viewType == LIST_ITEM) {
+        val itemView: View = if (viewType == listItem) {
             LayoutInflater.from(parent.context).inflate(R.layout.images_list_design, parent, false)
         } else {
             LayoutInflater.from(parent.context).inflate(R.layout.images_grid_design, parent, false)
@@ -99,9 +99,9 @@ class ImagesListAdapter(private val context: Fragment) :
 
     override fun getItemViewType(position: Int): Int {
         return if (isSwitchView) {
-            LIST_ITEM
+            listItem
         } else {
-            GRID_ITEM
+            gridItem
         }
     }
 
@@ -247,9 +247,9 @@ class ImagesListAdapter(private val context: Fragment) :
             newFile.path,
             Uri.fromFile(newFile)
         )
-        items?.removeAt(newPosition)
-        items?.add(newPosition, newItem)
-        notifyItemChanged(newPosition)
+        items?.removeAt(position)
+        items?.add(position, newItem)
+        notifyItemChanged(position)
     }
 
     private fun requestDeleteR(v: View?, images: Images?) {

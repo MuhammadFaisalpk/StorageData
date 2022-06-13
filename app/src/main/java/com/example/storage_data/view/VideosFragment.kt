@@ -14,13 +14,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
 import com.example.storage_data.adapter.VideosListAdapter
 import com.example.storage_data.databinding.FragmentVideosBinding
+import com.example.storage_data.model.Videos
 import com.example.storage_data.utils.Interface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 
 class VideosFragment : Fragment(), Interface {
@@ -75,24 +72,13 @@ class VideosFragment : Fragment(), Interface {
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         )[ViewModel::class.java]
 
-        CoroutineScope(Dispatchers.IO).launch {
-            withContext(Dispatchers.Main) {
-                viewModal.getAllVideos().observe(viewLifecycleOwner) { list ->
-                    list?.let {
-                        // Call to UI thread
-                        progressBar.visibility = View.GONE
-                        videosListAdapter.setListItems(list)
-                    }
-                }
-            }
+        viewModal.getVideos().observe(viewLifecycleOwner) { paths ->
+            // update UI
+            progressBar.visibility = View.GONE
+            videosListAdapter.setListItems(paths as ArrayList<Videos>)
         }
-//        viewModal.getAllVideos().observe(viewLifecycleOwner) { list ->
-//            list?.let {
-//                //on below line we are updating our list.
-//                progressBar.visibility = View.GONE
-//                videosListAdapter.setListItems(list)
-//            }
-//        }
+        viewModal.loadVideos()
+
     }
 
     override fun gridButtonClick() {
@@ -102,8 +88,8 @@ class VideosFragment : Fragment(), Interface {
                 context,
                 3
             )
-        val isSwitched1: Boolean = videosListAdapter.getItemViewType()
+        val getSwitchCheck: Boolean = videosListAdapter.getItemViewType()
 
-        (activity as? ViewTypeInterface)?.setDrawableRes(isSwitched1)
+        (activity as? ViewTypeInterface)?.setDrawableRes(getSwitchCheck)
     }
 }
