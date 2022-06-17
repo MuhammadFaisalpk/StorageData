@@ -8,32 +8,37 @@ import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.*
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.IntentSenderRequest
-import androidx.annotation.RequiresApi
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.storage_data.R
-import com.example.storage_data.model.Images
-import com.example.storage_data.view.ImageSliderActivity
+import com.example.storage_data.activities.ImageSliderActivity
+import com.example.storage_data.model.MyModel
+import com.example.storage_data.model.SelectedModel
+import com.example.storage_data.utils.MySingelton
+import com.example.storage_data.utils.ViewTypeInterface
+import com.example.storage_data.view.ImagesFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
 class ImagesListAdapter(
     private val context: Fragment,
+    private val imagesFragment: ImagesFragment
 ) :
     RecyclerView.Adapter<ImagesListAdapter.ViewHolder>() {
 
-    var items: ArrayList<Images>? = null
+    private var items: ArrayList<MyModel>? = null
+    private var checkList: ArrayList<SelectedModel>? = ArrayList()
     private var newPosition = 0
-    var newItem: Images? = null
+    var newItem: MyModel? = null
     private val listItem = 0
     private val gridItem = 1
     var isSwitchView = true
@@ -63,13 +68,56 @@ class ImagesListAdapter(
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(holder.imageHolder)
 
-            holder.itemView.setOnClickListener() {
-                val intent = Intent(it.context, ImageSliderActivity::class.java)
-                intent.putExtra("image_position", position)
-                intent.putExtra("images_list", items)
-                it.context.startActivity(intent)
+            if (checkList?.get(position)?.selected == true) {
+                holder.clMain.setBackgroundResource(R.color.purple_200)
+            } else {
+                holder.clMain.setBackgroundResource(android.R.color.transparent)
             }
 
+            holder.itemView.setOnClickListener() {
+                MySingelton.setData(items)
+                MySingelton.setPosition(position)
+
+                val intent = Intent(it.context, ImageSliderActivity::class.java)
+                it.context.startActivity(intent)
+            }
+            holder.itemView.setOnLongClickListener {
+                val check = checkList?.get(position)?.selected
+                val value = checkList?.get(position)?.item
+
+                if (check == true) {
+                    if (value != null) {
+                        MySingelton.removeSelectedImages(value)
+                    }
+
+                    checkList?.removeAt(position)
+                    checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
+
+                    holder.clMain.setBackgroundResource(android.R.color.transparent)
+                } else {
+                    if (value != null) {
+                        MySingelton.setSelectedImages(value)
+                    }
+
+                    checkList?.removeAt(position)
+                    checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
+
+                    holder.clMain.setBackgroundResource(R.color.purple_200)
+                }
+
+                for (i in 0 until checkList?.size!!) {
+                    val check = checkList!![i].selected
+
+                    if (check) {
+                        (context.context as? ViewTypeInterface)?.setSelectedDrawableRes(true)
+                        break
+                    } else {
+                        (context.context as? ViewTypeInterface)?.setSelectedDrawableRes(false)
+                    }
+                }
+
+                return@setOnLongClickListener true
+            }
             holder.optionHolder.setOnClickListener() {
                 val popupMenu = PopupMenu(it.context, holder.optionHolder)
                 popupMenu.menuInflater.inflate(R.menu.popup_menu, popupMenu.menu)
@@ -117,6 +165,19 @@ class ImagesListAdapter(
         return isSwitchView
     }
 
+    fun getSelectedItemsCheck(): Boolean {
+        var checkVal: Boolean = false
+        for (i in 0 until checkList?.size!!) {
+            val check = checkList!![i].selected
+
+            if (check) {
+                checkVal = check
+                break
+            }
+        }
+        return checkVal
+    }
+
     fun onResult(requestCode: Int) {
         when (requestCode) {
             125 -> afterDeletePermission(newPosition)
@@ -127,7 +188,8 @@ class ImagesListAdapter(
     private lateinit var newName: String
 
     private fun renameFunction(position: Int) {
-        val dialog = Dialog(context.requireContext(), android.R.style.Theme_Material_Light_Dialog_Alert)
+        val dialog =
+            Dialog(context.requireContext(), android.R.style.Theme_Material_Light_Dialog_Alert)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.setCancelable(true)
 
@@ -248,12 +310,12 @@ class ImagesListAdapter(
     }
 
     private fun updateRenameUI(
-        newItem: Images?,
+        newItem: MyModel?,
         position: Int,
         newName: String,
         newFile: File
     ) {
-        var newItem = Images(
+        val newItem = MyModel(
             newItem?.id,
             newName,
             newItem?.folderName,
@@ -266,7 +328,7 @@ class ImagesListAdapter(
         notifyItemChanged(position)
     }
 
-    private fun deleteFunction(v: View?, images: Images?) {
+    private fun deleteFunction(v: View?, images: MyModel?) {
         //list of images to delete
         val uriList: List<Uri> = listOf(
             Uri.withAppendedPath(
@@ -318,11 +380,15 @@ class ImagesListAdapter(
     private fun afterDeletePermission(position: Int) {
         items?.removeAt(position)
         notifyDataSetChanged()
-//        notifyItemChanged(position )
     }
 
-    fun setListItems(items: ArrayList<Images>) {
+    fun setListItems(items: ArrayList<MyModel>) {
         this.items = items
+        notifyDataSetChanged()
+    }
+
+    fun checkSelectedItems(selected: ArrayList<SelectedModel>) {
+        checkList = selected
         notifyDataSetChanged()
     }
 
@@ -332,5 +398,6 @@ class ImagesListAdapter(
         val optionHolder: ImageView = itemView.findViewById(R.id.option)
         val nameHolder: TextView = itemView.findViewById(R.id.name)
         val fnameHolder: TextView = itemView.findViewById(R.id.foldername)
+        val clMain: ConstraintLayout = itemView.findViewById(R.id.cl_main)
     }
 }

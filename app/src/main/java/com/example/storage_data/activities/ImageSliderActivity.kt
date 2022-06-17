@@ -1,4 +1,4 @@
-package com.example.storage_data.view
+package com.example.storage_data.activities
 
 import android.os.Bundle
 import android.widget.Button
@@ -8,7 +8,8 @@ import androidx.viewpager2.widget.ViewPager2
 import com.example.storage_data.R
 import com.example.storage_data.adapter.ImagesPagerAdapter
 import com.example.storage_data.databinding.ActivityImageSliderBinding
-import com.example.storage_data.model.Images
+import com.example.storage_data.model.MyModel
+import com.example.storage_data.utils.MySingelton
 
 class ImageSliderActivity : AppCompatActivity() {
 
@@ -16,7 +17,7 @@ class ImageSliderActivity : AppCompatActivity() {
     private lateinit var imagePager: ViewPager2
     private lateinit var previous: Button
     private lateinit var next: Button
-    private var allImages: ArrayList<Images> = ArrayList()
+    private var allImages: ArrayList<MyModel> = ArrayList()
     private var position: Int = 0
     lateinit var imagesPagerAdapter: ImagesPagerAdapter
 
@@ -39,10 +40,8 @@ class ImageSliderActivity : AppCompatActivity() {
     }
 
     private fun getImagesData() {
-
-        position = intent.getIntExtra("image_position", 0)
-        allImages = intent?.getParcelableArrayListExtra("images_list")
-            ?: throw IllegalStateException("Images array list is null")
+        position = MySingelton.getPosition()
+        allImages = MySingelton.getData()!!
     }
 
     private fun setPagerAdapter() {

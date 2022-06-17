@@ -4,7 +4,7 @@ import android.net.Uri
 import android.os.Parcel
 import android.os.Parcelable
 
-data class Videos(
+data class MyModel(
     val id: String?, var title: String?, val folderName: String?,
     val size: String?, var path: String?, var artUri: Uri?
 ) : Parcelable {
@@ -30,12 +30,12 @@ data class Videos(
         return 0
     }
 
-    companion object CREATOR : Parcelable.Creator<Videos> {
-        override fun createFromParcel(parcel: Parcel): Videos {
-            return Videos(parcel)
+    companion object CREATOR : Parcelable.Creator<MyModel> {
+        override fun createFromParcel(parcel: Parcel): MyModel {
+            return MyModel(parcel)
         }
 
-        override fun newArray(size: Int): Array<Videos?> {
+        override fun newArray(size: Int): Array<MyModel?> {
             return arrayOfNulls(size)
         }
     }

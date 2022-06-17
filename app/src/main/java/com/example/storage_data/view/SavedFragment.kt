@@ -1,11 +1,13 @@
 package com.example.storage_data.view
 
+import android.R.attr.path
 import android.os.Bundle
+import android.os.Environment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -18,13 +20,13 @@ import com.example.storage_data.databinding.FragmentDocsBinding
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
 import com.example.storage_data.utils.Interface
-import com.example.storage_data.utils.MySingelton
 import com.example.storage_data.utils.SelectInterface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
+import java.io.File
 
 
-class DocsFragment : Fragment(), Interface, SelectInterface {
+class SavedFragment : Fragment(), Interface, SelectInterface {
 
     private lateinit var viewModal: ViewModel
     lateinit var docsListAdapter: DocsListAdapter
@@ -47,6 +49,7 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
 
         initViews()
         getAllItems()
+        showImageList()
 
         return binding.root
     }
@@ -60,8 +63,23 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
             activity,
             RecyclerView.VERTICAL, false
         )
-        docsListAdapter = DocsListAdapter(this)
-        recyclerView.adapter = docsListAdapter
+//        docsListAdapter = DocsListAdapter(this)
+//        recyclerView.adapter = docsListAdapter
+    }
+
+    private fun showImageList() {
+        val file = File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+            getString(R.string.app_name) + "/Saved"
+        )
+
+        if (file.exists()) {
+            val filesList: Array<out File>? = file.listFiles()
+
+            if (filesList != null) {
+                Log.d("dasd", filesList?.size.toString())
+            }
+        }
     }
 
     override fun onResume() {
@@ -69,9 +87,6 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
 
         val isSwitched: Boolean = docsListAdapter.getItemViewType()
         (activity as? ViewTypeInterface)?.setGridDrawableRes(isSwitched)
-
-        val isSelected: Boolean = docsListAdapter.getSelectedItemsCheck()
-        (activity as? ViewTypeInterface)?.setSelectedDrawableRes(isSelected)
     }
 
     private fun getAllItems() {
@@ -107,16 +122,7 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
     }
 
     override fun saveButtonClick() {
-        var newArray: ArrayList<MyModel>? = ArrayList()
-
-        for (item in arrayCheck!!) {
-            if (item.selected) {
-                newArray?.add(item.item)
-            }
-        }
-        if (newArray != null) {
-            Toast.makeText(context, "Docs " + newArray.size, Toast.LENGTH_SHORT).show()
-        }
+        TODO("Not yet implemented")
     }
 
     override fun selectButtonClick() {
@@ -127,12 +133,6 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
         }
 
         docsListAdapter.checkSelectedItems(arrayCheck!!)
-
-        (activity as? ViewTypeInterface)?.setSelectedDrawableRes(true)
-
-        for (item in docsArray) {
-            MySingelton.setSelectedDocs(item)
-        }
     }
 
     override fun unSelectButtonClick() {
@@ -143,11 +143,5 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
         }
 
         docsListAdapter.checkSelectedItems(arrayCheck!!)
-
-        (activity as? ViewTypeInterface)?.setSelectedDrawableRes(false)
-
-        for (item in docsArray) {
-            MySingelton.removeSelectedDocs(item)
-        }
     }
 }

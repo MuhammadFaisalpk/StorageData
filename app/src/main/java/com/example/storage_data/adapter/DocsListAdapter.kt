@@ -14,25 +14,26 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.*
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.IntentSenderRequest
-import androidx.annotation.RequiresApi
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
-import com.example.storage_data.model.Documents
+import com.example.storage_data.model.MyModel
+import com.example.storage_data.model.SelectedModel
+import com.example.storage_data.utils.MySingelton
+import com.example.storage_data.utils.ViewTypeInterface
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
 
 class DocsListAdapter(
     private val context: Fragment,
-    private val resolutionForResult: ActivityResultLauncher<IntentSenderRequest>,
 ) :
     RecyclerView.Adapter<DocsListAdapter.ViewHolder>() {
 
-    var items: ArrayList<Documents>? = null
-    var newItem: Documents? = null
+    var items: ArrayList<MyModel>? = null
+    private var checkList: ArrayList<SelectedModel>? = ArrayList()
+    var newItem: MyModel? = null
     private var newPosition = 0
     private val listItem = 0
     private val gridItem = 1
@@ -55,6 +56,46 @@ class DocsListAdapter(
 
             holder.nameHolder.text = items?.get(position)?.title
 
+            if (checkList?.get(position)?.selected == true) {
+                holder.clMain.setBackgroundResource(R.color.purple_200)
+            } else {
+                holder.clMain.setBackgroundResource(android.R.color.transparent)
+            }
+            holder.itemView.setOnLongClickListener {
+                val check = checkList?.get(position)?.selected
+                val value = checkList?.get(position)?.item
+
+                if (check == true) {
+                    if (value != null) {
+                        MySingelton.removeSelectedDocs(value)
+                    }
+
+                    checkList?.removeAt(position)
+                    checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
+
+                    holder.clMain.setBackgroundResource(android.R.color.transparent)
+                } else {
+                    if (value != null) {
+                        MySingelton.setSelectedDocs(value)
+                    }
+                    checkList?.removeAt(position)
+                    checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
+
+                    holder.clMain.setBackgroundResource(R.color.purple_200)
+                }
+                for (i in 0 until checkList?.size!!) {
+                    val check = checkList!![i].selected
+
+                    if (check) {
+                        (context.context as? ViewTypeInterface)?.setSelectedDrawableRes(true)
+                        break
+                    } else {
+                        (context.context as? ViewTypeInterface)?.setSelectedDrawableRes(false)
+                    }
+                }
+                return@setOnLongClickListener true
+            }
+
             holder.optionHolder.setOnClickListener() {
                 val popupMenu = PopupMenu(it.context, holder.optionHolder)
                 popupMenu.menuInflater.inflate(R.menu.popup_menu, popupMenu.menu)
@@ -66,6 +107,7 @@ class DocsListAdapter(
                         R.id.action_delete -> {
                             if (document != null) {
                                 deleteFunction(it, document)
+//                                mDeleteFunction(it, document)
                             }
                         }
                     }
@@ -73,6 +115,7 @@ class DocsListAdapter(
                 }
                 popupMenu.show()
             }
+
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -97,7 +140,18 @@ class DocsListAdapter(
     fun getItemViewType(): Boolean {
         return isSwitchView
     }
+    fun getSelectedItemsCheck(): Boolean {
+        var checkVal: Boolean = false
+        for (i in 0 until checkList?.size!!) {
+            val check = checkList!![i].selected
 
+            if (check) {
+                checkVal = check
+                break
+            }
+        }
+        return checkVal
+    }
     fun toggleItemViewType(): Boolean {
         isSwitchView = !isSwitchView
         return isSwitchView
@@ -113,6 +167,7 @@ class DocsListAdapter(
     private fun renameFunction(position: Int) {
         val dialog =
             Dialog(context.requireContext(), android.R.style.Theme_Material_Light_Dialog_Alert)
+
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.setCancelable(true)
 
@@ -166,12 +221,13 @@ class DocsListAdapter(
     }
 
     private fun updateRenameUI(
-        newItem: Documents?, position: Int, newName: String, newFile: File
+        newItem: MyModel?, position: Int, newName: String, newFile: File
     ) {
 
-        var newItem = Documents(
+        val newItem = MyModel(
             newItem?.id,
             newName,
+            null,
             newItem?.size,
             newFile.path,
             Uri.fromFile(newFile)
@@ -181,7 +237,7 @@ class DocsListAdapter(
         notifyItemChanged(position)
     }
 
-    private fun deleteFunction(view: View, docs: Documents?) {
+    private fun deleteFunction(view: View, docs: MyModel?) {
         val file = docs?.path?.let { File(it) }
         val builder = MaterialAlertDialogBuilder(view.context)
         builder.setTitle("Delete Document?")
@@ -209,7 +265,7 @@ class DocsListAdapter(
         delDialog.show()
     }
 
-    private fun nDeleteFunction(v: View?, docs: Documents?) {
+    private fun mDeleteFunction(v: View?, docs: MyModel?) {
         val contentResolver = context.requireContext().contentResolver
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -269,8 +325,13 @@ class DocsListAdapter(
 //        notifyItemChanged(position)
     }
 
-    fun setListItems(items: ArrayList<Documents>) {
+    fun setListItems(items: ArrayList<MyModel>) {
         this.items = items
+        notifyDataSetChanged()
+    }
+
+    fun checkSelectedItems(selected: ArrayList<SelectedModel>) {
+        checkList = selected
         notifyDataSetChanged()
     }
 
@@ -280,6 +341,7 @@ class DocsListAdapter(
         val optionHolder: ImageView = itemView.findViewById(R.id.option)
         val nameHolder: TextView = itemView.findViewById(R.id.name)
         val fnameHolder: TextView = itemView.findViewById(R.id.foldername)
+        val clMain: ConstraintLayout = itemView.findViewById(R.id.cl_main)
     }
 
 }

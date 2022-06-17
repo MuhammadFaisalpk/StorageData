@@ -1,24 +1,19 @@
 package com.example.storage_data.repository
 
 import android.app.Application
-import android.content.ContentResolver
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.webkit.MimeTypeMap
-import android.widget.Toast
-import androidx.lifecycle.MutableLiveData
-import com.example.storage_data.model.Documents
-import com.example.storage_data.model.Images
-import com.example.storage_data.model.Videos
+import com.example.storage_data.model.MyModel
 import java.io.File
 
 
 class Repository(private val application: Application) {
 
-    fun fetchAllImages(): ArrayList<Images> {
-        val listImages: ArrayList<Images> = ArrayList()
+    fun fetchAllImages(): ArrayList<MyModel> {
+        val listImages: ArrayList<MyModel> = ArrayList()
 
         val columns = arrayOf(
             MediaStore.Images.Media.TITLE,
@@ -65,7 +60,7 @@ class Repository(private val application: Application) {
                 val artUriC = Uri.fromFile(file)
 
                 listImages.add(
-                    Images(
+                    MyModel(
                         id,
                         title,
                         folderName,
@@ -80,8 +75,8 @@ class Repository(private val application: Application) {
         return listImages
     }
 
-    fun fetchAllVideos(): ArrayList<Videos> {
-        val listVideos: ArrayList<Videos> = ArrayList()
+    fun fetchAllVideos(): ArrayList<MyModel> {
+        val listVideos: ArrayList<MyModel> = ArrayList()
 
         val columns = arrayOf(
             MediaStore.Video.Media.TITLE,
@@ -127,7 +122,7 @@ class Repository(private val application: Application) {
                 val artUriC = Uri.fromFile(file)
 
                 listVideos.add(
-                    Videos(
+                    MyModel(
                         id,
                         title,
                         folderName,
@@ -142,8 +137,8 @@ class Repository(private val application: Application) {
         return listVideos
     }
 
-    fun fetchAllDocs(): ArrayList<Documents> {
-        val listDocuments: ArrayList<Documents> = ArrayList()
+    fun fetchAllDocs(): ArrayList<MyModel> {
+        val listDocuments: ArrayList<MyModel> = ArrayList()
 
         val projection = arrayOf(
             MediaStore.Files.FileColumns._ID,
@@ -190,9 +185,10 @@ class Repository(private val application: Application) {
                         if (file.exists()) {
                             //you can get your pdf files
                             listDocuments.add(
-                                Documents(
+                                MyModel(
                                     id,
                                     name,
+                                    null,
                                     size,
                                     path,
                                     fileUri

@@ -4,7 +4,6 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.ContentValues
 import android.content.Intent
-import android.graphics.drawable.Drawable
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -14,15 +13,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.*
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.request.target.Target
 import com.example.storage_data.R
-import com.example.storage_data.model.Images
-import com.example.storage_data.view.VideoPlayerActivity
-import com.example.storage_data.model.Videos
+import com.example.storage_data.model.MyModel
+import com.example.storage_data.model.SelectedModel
+import com.example.storage_data.activities.VideoPlayerActivity
+import com.example.storage_data.utils.MySingelton
+import com.example.storage_data.utils.ViewTypeInterface
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
@@ -30,8 +31,9 @@ import java.io.File
 class VideosListAdapter(private val context: Fragment) :
     RecyclerView.Adapter<VideosListAdapter.ViewHolder>() {
 
-    var items: ArrayList<Videos>? = null
-    var newItem: Videos? = null
+    var items: ArrayList<MyModel>? = null
+    private var checkList: ArrayList<SelectedModel>? = ArrayList()
+    var newItem: MyModel? = null
     private var newPosition = 0
     private val listItem = 0
     private val gridItem = 1
@@ -62,12 +64,51 @@ class VideosListAdapter(private val context: Fragment) :
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(holder.imageHolder)
 
+            if (checkList?.get(position)?.selected == true) {
+                holder.clMain.setBackgroundResource(R.color.purple_200)
+            } else {
+                holder.clMain.setBackgroundResource(android.R.color.transparent)
+            }
+
             holder.itemView.setOnClickListener() {
                 val intent = Intent(it.context, VideoPlayerActivity::class.java)
                 intent.putExtra("video_data", videos)
                 it.context.startActivity(intent)
             }
+            holder.itemView.setOnLongClickListener {
+                val check = checkList?.get(position)?.selected
+                val value = checkList?.get(position)?.item
 
+                if (check == true) {
+                    if (value != null) {
+                        MySingelton.removeSelectedVideos(value)
+                    }
+
+                    checkList?.removeAt(position)
+                    checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
+
+                    holder.clMain.setBackgroundResource(android.R.color.transparent)
+                } else {
+                    if (value != null) {
+                        MySingelton.setSelectedVideos(value)
+                    }
+                    checkList?.removeAt(position)
+                    checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
+
+                    holder.clMain.setBackgroundResource(R.color.purple_200)
+                }
+                for (i in 0 until checkList?.size!!) {
+                    val check = checkList!![i].selected
+
+                    if (check) {
+                        (context.context as? ViewTypeInterface)?.setSelectedDrawableRes(true)
+                        break
+                    } else {
+                        (context.context as? ViewTypeInterface)?.setSelectedDrawableRes(false)
+                    }
+                }
+                return@setOnLongClickListener true
+            }
             holder.optionHolder.setOnClickListener() {
                 val popupMenu: PopupMenu = PopupMenu(it.context, holder.optionHolder)
                 popupMenu.menuInflater.inflate(R.menu.popup_menu, popupMenu.menu)
@@ -119,6 +160,19 @@ class VideosListAdapter(private val context: Fragment) :
         return isSwitchView
     }
 
+    fun getSelectedItemsCheck(): Boolean {
+        var checkVal: Boolean = false
+        for (i in 0 until checkList?.size!!) {
+            val check = checkList!![i].selected
+
+            if (check) {
+                checkVal = check
+                break
+            }
+        }
+        return checkVal
+    }
+
     fun onResult(requestCode: Int) {
         when (requestCode) {
             123 -> afterDeletePermission(newPosition)
@@ -129,7 +183,8 @@ class VideosListAdapter(private val context: Fragment) :
     private lateinit var newName: String
 
     private fun renameFunction(position: Int) {
-        val dialog = Dialog(context.requireContext(), android.R.style.Theme_Material_Light_Dialog_Alert)
+        val dialog =
+            Dialog(context.requireContext(), android.R.style.Theme_Material_Light_Dialog_Alert)
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         dialog.setCancelable(true)
 
@@ -246,9 +301,9 @@ class VideosListAdapter(private val context: Fragment) :
         }
     }
 
-    private fun updateRenameUI(newItem: Videos?, position: Int, newName: String, newFile: File) {
+    private fun updateRenameUI(newItem: MyModel?, position: Int, newName: String, newFile: File) {
 
-        var newItem = Videos(
+        val newItem = MyModel(
             newItem?.id,
             newName,
             newItem?.folderName,
@@ -261,7 +316,7 @@ class VideosListAdapter(private val context: Fragment) :
         notifyItemChanged(position)
     }
 
-    private fun deleteFunction(v: View?, item: Videos) {
+    private fun deleteFunction(v: View?, item: MyModel) {
         //list of videos to delete
         val uriList: List<Uri> = listOf(
             Uri.withAppendedPath(
@@ -315,8 +370,13 @@ class VideosListAdapter(private val context: Fragment) :
 //        notifyItemChanged(position)
     }
 
-    fun setListItems(items: ArrayList<Videos>) {
+    fun setListItems(items: ArrayList<MyModel>) {
         this.items = items
+        notifyDataSetChanged()
+    }
+
+    fun checkSelectedItems(selected: ArrayList<SelectedModel>) {
+        checkList = selected
         notifyDataSetChanged()
     }
 
@@ -326,5 +386,6 @@ class VideosListAdapter(private val context: Fragment) :
         val optionHolder: ImageView = itemView.findViewById(R.id.option)
         val nameHolder: TextView = itemView.findViewById(R.id.name)
         val fnameHolder: TextView = itemView.findViewById(R.id.foldername)
+        val clMain: ConstraintLayout = itemView.findViewById(R.id.cl_main)
     }
 }

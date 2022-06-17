@@ -1,4 +1,4 @@
-package com.example.storage_data.view
+package com.example.storage_data.activities
 
 import android.os.Bundle
 import android.widget.MediaController
@@ -8,7 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import com.example.storage_data.R
 import com.example.storage_data.databinding.ActivityVideoPlayerBinding
-import com.example.storage_data.model.Videos
+import com.example.storage_data.model.MyModel
 
 class VideoPlayerActivity : AppCompatActivity() {
 
@@ -31,7 +31,7 @@ class VideoPlayerActivity : AppCompatActivity() {
     }
 
     private fun getSetData() {
-        val videoData = intent?.getParcelableExtra<Videos>("video_data")
+        val videoData = intent?.getParcelableExtra<MyModel>("video_data")
         titleView.text = videoData?.title
 
         val mediaController = MediaController(this)

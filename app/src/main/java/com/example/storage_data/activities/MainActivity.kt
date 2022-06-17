@@ -1,4 +1,4 @@
-package com.example.storage_data.view
+package com.example.storage_data.activities
 
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -10,8 +10,10 @@ import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -24,7 +26,13 @@ import androidx.viewpager2.widget.ViewPager2
 import com.example.storage_data.R
 import com.example.storage_data.databinding.ActivityMainBinding
 import com.example.storage_data.utils.Interface
+import com.example.storage_data.utils.MySingelton
+import com.example.storage_data.utils.SelectInterface
 import com.example.storage_data.utils.ViewTypeInterface
+import com.example.storage_data.view.DocsFragment
+import com.example.storage_data.view.ImagesFragment
+import com.example.storage_data.view.SavedFragment
+import com.example.storage_data.view.VideosFragment
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
@@ -35,7 +43,10 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
     private lateinit var binding: ActivityMainBinding
     private lateinit var layout: View
     lateinit var viewPager: ViewPager2
-    lateinit var gridChange: ImageView
+    private lateinit var gridChange: ImageView
+    lateinit var selectAll: TextView
+    private lateinit var unSelectAll: TextView
+    lateinit var save: TextView
 
     private lateinit var tabLayout: TabLayout
     private val WRITE_STORAGE_PERMISSION_REQUEST_CODE = 13
@@ -43,13 +54,13 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
     private lateinit var currentFragment: Fragment
 
     private var listFragments = arrayOf(
-        ImagesFragment(),
-        VideosFragment(), DocsFragment()
+        ImagesFragment(), VideosFragment(),
+        DocsFragment(), SavedFragment()
     )
 
     private val fragmentNames = arrayOf(
-        "Images",
-        "Videos", "Docs"
+        "Images", "Videos",
+        "Docs", "Saved"
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,10 +84,25 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         viewPager = binding.pager
         tabLayout = binding.tabs
         gridChange = binding.gridChange
+        selectAll = binding.selectAll
+        unSelectAll = binding.unselectAll
+        save = binding.save
 
         gridChange.setOnClickListener() {
             currentFragment = listFragments[viewPager.currentItem] as Fragment
             (currentFragment as Interface).gridButtonClick()
+        }
+        selectAll.setOnClickListener() {
+            currentFragment = listFragments[viewPager.currentItem] as Fragment
+            (currentFragment as SelectInterface).selectButtonClick()
+        }
+        unSelectAll.setOnClickListener() {
+            currentFragment = listFragments[viewPager.currentItem] as Fragment
+            (currentFragment as SelectInterface).unSelectButtonClick()
+        }
+        save.setOnClickListener() {
+            currentFragment = listFragments[viewPager.currentItem] as Fragment
+            (currentFragment as Interface).saveButtonClick()
         }
     }
 
@@ -127,15 +153,6 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 viewPager.currentItem = tab.position;
-
-//                val fm = supportFragmentManager
-//                val ft = fm.beginTransaction()
-//                val count = fm.backStackEntryCount
-//                if (count >= 1) {
-//                    supportFragmentManager.popBackStack()
-//                }
-//                ft.commit()
-
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab) {
@@ -241,8 +258,13 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         snackBar.show()
     }
 
-    override fun setDrawableRes(enabled: Boolean) {
+    override fun setGridDrawableRes(enabled: Boolean) {
         if (enabled) gridChange.setImageResource(R.drawable.ic_baseline_grid_on)
         else gridChange.setImageResource(R.drawable.ic_baseline_grid_off)
+    }
+
+    override fun setSelectedDrawableRes(enabled: Boolean) {
+        if (enabled) save.visibility = View.VISIBLE
+        else save.visibility = View.GONE
     }
 }

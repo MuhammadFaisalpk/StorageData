@@ -8,6 +8,7 @@
     app:cardPreventCornerOverlap="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cl_main"
         android:layout_width="100dp"
         android:layout_height="wrap_content">
 

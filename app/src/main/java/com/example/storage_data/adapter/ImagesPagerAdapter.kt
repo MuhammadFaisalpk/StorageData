@@ -11,11 +11,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
 import com.example.storage_data.R
-import com.example.storage_data.model.Images
+import com.example.storage_data.model.MyModel
 
 class ImagesPagerAdapter(
     private val context: Activity,
-    private val allImages: ArrayList<Images>
+    private val allImages: ArrayList<MyModel>
 ) :
     RecyclerView.Adapter<ImagesPagerAdapter.ViewHolder>() {
     // Array of images
@@ -31,7 +31,7 @@ class ImagesPagerAdapter(
     // This method binds the screen with the view
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         ViewCompat.setTransitionName( holder.images, position.toString() + "picture")
-        val pic: Images = allImages.get(position)
+        val pic: MyModel = allImages.get(position)
         Glide.with(context)
             .load(pic.path)
             .apply(RequestOptions().fitCenter())
