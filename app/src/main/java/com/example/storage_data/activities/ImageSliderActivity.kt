@@ -40,8 +40,8 @@ class ImageSliderActivity : AppCompatActivity() {
     }
 
     private fun getImagesData() {
-        position = MySingelton.getPosition()
-        allImages = MySingelton.getData()!!
+        position = MySingelton.getImagePosition()
+        allImages = MySingelton.getImagesData()!!
     }
 
     private fun setPagerAdapter() {

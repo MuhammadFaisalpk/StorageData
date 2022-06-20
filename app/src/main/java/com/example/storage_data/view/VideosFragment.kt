@@ -210,7 +210,7 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
 
         for (item in videosArray!!) {
-            MySingelton.setSelectedImages(item)
+            MySingelton.setSelectedVideos(item)
         }
     }
 
@@ -225,7 +225,7 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
 
         for (item in videosArray!!) {
-            MySingelton.removeSelectedImages(item)
+            MySingelton.removeSelectedVideos(item)
         }
     }
 }

@@ -110,8 +110,8 @@ class ImagesListAdapter(
     }
 
     private fun singlePressCheck(position: Int, it: View) {
-        MySingelton.setData(items)
-        MySingelton.setPosition(position)
+        MySingelton.setImagesData(items)
+        MySingelton.setImagePosition(position)
 
         val intent = Intent(it.context, ImageSliderActivity::class.java)
         it.context.startActivity(intent)

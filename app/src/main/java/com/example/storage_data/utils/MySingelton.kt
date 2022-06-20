@@ -12,12 +12,20 @@ object MySingelton {
     private var arrayPosition: Int = 0
 
 
-    fun setData(data: ArrayList<MyModel>?) {
+    fun setImagesData(data: ArrayList<MyModel>?) {
         arrayData = data
     }
 
-    fun getData(): ArrayList<MyModel>? {
+    fun getImagesData(): ArrayList<MyModel>? {
         return arrayData
+    }
+
+    fun setImagePosition(pos: Int) {
+        arrayPosition = pos
+    }
+
+    fun getImagePosition(): Int {
+        return arrayPosition
     }
 
     fun setSelectedImages(data: MyModel) {
@@ -60,13 +68,5 @@ object MySingelton {
 
     fun removeSelectedDocs(data: MyModel) {
         selectedDocs?.remove(data)
-    }
-
-    fun setPosition(pos: Int) {
-        arrayPosition = pos
-    }
-
-    fun getPosition(): Int {
-        return arrayPosition
     }
 }

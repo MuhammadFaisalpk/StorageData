@@ -204,7 +204,7 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
         (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
 
         for (item in docsArray!!) {
-            MySingelton.setSelectedImages(item)
+            MySingelton.setSelectedDocs(item)
         }
     }
 
@@ -219,7 +219,7 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
         (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
 
         for (item in docsArray!!) {
-            MySingelton.removeSelectedImages(item)
+            MySingelton.removeSelectedDocs(item)
         }
     }
 }
