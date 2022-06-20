@@ -2,11 +2,12 @@ package com.example.storage_data.view
 
 
 import android.content.ContentValues
-import android.graphics.Bitmap
+import android.media.MediaScannerConnection
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,9 +29,12 @@ import com.example.storage_data.utils.MySingelton
 import com.example.storage_data.utils.SelectInterface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.io.*
+import java.util.*
+import kotlin.collections.ArrayList
 
 
 class VideosFragment : Fragment(), Interface, SelectInterface {
@@ -81,7 +85,7 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         (activity as? ViewTypeInterface)?.setGridDrawableRes(isSwitched)
 
         val isSelected: Boolean = videosListAdapter.getSelectedItemsCheck()
-        (activity as? ViewTypeInterface)?.setSelectedDrawableRes(isSelected)
+        (activity as? ViewTypeInterface)?.setSaveCheckRes(isSelected)
     }
 
     private fun getAllItems() {
@@ -116,6 +120,57 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         (activity as? ViewTypeInterface)?.setGridDrawableRes(getSwitchCheck)
     }
 
+    private fun saveVideoFile(filePath: String?) {
+        val newName = "VID_${System.currentTimeMillis()}.mp4"
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val currentFile = filePath?.let { File(it) }
+
+                val wallpaperDirectory =
+                    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
+
+                val newFile = File(
+                    wallpaperDirectory,
+                    newName
+                )
+                if (!wallpaperDirectory.exists()) {
+                    wallpaperDirectory.mkdirs()
+                }
+                if (currentFile != null) {
+                    if (currentFile.exists()) {
+                        val `in`: InputStream = FileInputStream(currentFile)
+                        val out: OutputStream = FileOutputStream(newFile)
+
+                        // Copy the bits from instream to outstream
+                        val buf = ByteArray(1024)
+                        var len: Int
+                        while (`in`.read(buf).also { len = it } > 0) {
+                            out.write(buf, 0, len)
+                        }
+                        `in`.close()
+                        out.close()
+
+                        MediaScannerConnection.scanFile(
+                            context, arrayOf(newFile.absolutePath), null
+                        ) { path, uri ->
+                            Log.i("ExternalStorage", "Scanned $path:")
+                            Log.i("ExternalStorage", "-> uri=$uri")
+                        }
+
+                        Log.i("ExternalStorage", "Video Saved.")
+
+                    } else {
+                        Log.i("ExternalStorage", "Video saving failed.")
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+//        Toast.makeText(context, "$newName saved.", Toast.LENGTH_SHORT).show()
+    }
+
     override fun saveButtonClick() {
         var newArray: ArrayList<MyModel>? = ArrayList()
 
@@ -126,105 +181,40 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         }
         if (newArray != null) {
             for (i in 0 until newArray.size) {
-                saveVideo(newArray[0].artUri?.path, newArray[0].title!!)
+                saveVideoFile(newArray[0].artUri?.path)
             }
+            Toast.makeText(context, "Selected files saved.", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun saveVideo(filePath: String?, fileName: String) {
-        filePath?.let {
-            val context = requireContext()
-            val values = ContentValues().apply {
-                val folderName = Environment.DIRECTORY_MOVIES
-                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                put(MediaStore.Images.Media.MIME_TYPE, "video/quicktime")
-                if (Build.VERSION.SDK_INT >= 29) {
-                    put(
-                        MediaStore.Images.Media.RELATIVE_PATH,
-                        folderName + "/${context.getString(R.string.app_name)}/"
-                    )
-                    put(MediaStore.Images.Media.IS_PENDING, 1)
-                } else {
-                    val directory = Environment.getExternalStorageDirectory().absolutePath
-                        .toString() + File.separator + Environment.DIRECTORY_MOVIES + "/" + getString(
-                        R.string.app_name
-                    )
-                    var createdvideo = File(directory, fileName)
-                    put(
-                        MediaStore.Video.Media.DATE_ADDED,
-                        System.currentTimeMillis() / 1000
-                    )
-                    put(MediaStore.Video.Media.DATA, createdvideo.absolutePath)
+    override fun selectButtonClick(selectionCheck: Boolean) {
+        if (selectionCheck) {
+            arrayCheck?.clear()
 
-                }
+            for (item in videosArray) {
+                arrayCheck?.add(SelectedModel(true, item))
             }
 
-            val fileUri = if (Build.VERSION.SDK_INT >= 29) {
-                val collection =
-                    MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-                context.contentResolver.insert(collection, values)
-            } else {
-                context.contentResolver.insert(
-                    MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-                    values
-                )
+            videosListAdapter.checkSelectedItems(arrayCheck!!)
+
+            (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
+
+            for (item in videosArray) {
+                MySingelton.setSelectedImages(item)
             }
-            fileUri?.let {
-                context.contentResolver.openFileDescriptor(fileUri, "w").use { descriptor ->
-                    descriptor?.let {
-                        FileOutputStream(descriptor.fileDescriptor).use { out ->
-                            val videoFile = File(filePath)
-                            FileInputStream(videoFile).use { inputStream ->
-                                val buf = ByteArray(8192)
-                                while (true) {
-                                    val sz = inputStream.read(buf)
-                                    if (sz <= 0) break
-                                    out.write(buf, 0, sz)
-                                }
-                            }
-                        }
-                    }
-                }
+        } else {
+            arrayCheck?.clear()
 
-                values.clear()
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    values.put(MediaStore.Video.Media.IS_PENDING, 0)
-                }
-                context.contentResolver.update(fileUri, values, null, null)
+            for (item in videosArray) {
+                arrayCheck?.add(SelectedModel(false, item))
             }
-        }
-        Toast.makeText(context, "Video saved.", Toast.LENGTH_SHORT).show()
-    }
+            videosListAdapter.checkSelectedItems(arrayCheck!!)
 
-    override fun selectButtonClick() {
-        arrayCheck?.clear()
+            (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
 
-        for (item in videosArray) {
-            arrayCheck?.add(SelectedModel(true, item))
-        }
-
-        videosListAdapter.checkSelectedItems(arrayCheck!!)
-
-        (activity as? ViewTypeInterface)?.setSelectedDrawableRes(true)
-
-        for (item in videosArray) {
-            MySingelton.setSelectedVideos(item)
-        }
-    }
-
-    override fun unSelectButtonClick() {
-        arrayCheck?.clear()
-
-        for (item in videosArray) {
-            arrayCheck?.add(SelectedModel(false, item))
-        }
-
-        videosListAdapter.checkSelectedItems(arrayCheck!!)
-
-        (activity as? ViewTypeInterface)?.setSelectedDrawableRes(false)
-
-        for (item in videosArray) {
-            MySingelton.setSelectedVideos(item)
+            for (item in videosArray) {
+                MySingelton.removeSelectedImages(item)
+            }
         }
     }
 }

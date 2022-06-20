@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.storage_data.R
+import com.example.storage_data.activities.ImageSliderActivity
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
 import com.example.storage_data.activities.VideoPlayerActivity
@@ -38,6 +39,7 @@ class VideosListAdapter(private val context: Fragment) :
     private val listItem = 0
     private val gridItem = 1
     var isSwitchView = true
+    var isLongPress = false
 
     // create new views
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -65,48 +67,25 @@ class VideosListAdapter(private val context: Fragment) :
                 .into(holder.imageHolder)
 
             if (checkList?.get(position)?.selected == true) {
+                isLongPress = true
                 holder.clMain.setBackgroundResource(R.color.purple_200)
             } else {
+                isLongPress = false
                 holder.clMain.setBackgroundResource(android.R.color.transparent)
             }
 
             holder.itemView.setOnClickListener() {
-                val intent = Intent(it.context, VideoPlayerActivity::class.java)
-                intent.putExtra("video_data", videos)
-                it.context.startActivity(intent)
-            }
-            holder.itemView.setOnLongClickListener {
-                val check = checkList?.get(position)?.selected
-                val value = checkList?.get(position)?.item
-
-                if (check == true) {
-                    if (value != null) {
-                        MySingelton.removeSelectedVideos(value)
-                    }
-
-                    checkList?.removeAt(position)
-                    checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
-
-                    holder.clMain.setBackgroundResource(android.R.color.transparent)
+                if (!isLongPress) {
+                    singlePressCheck(position, it)
                 } else {
-                    if (value != null) {
-                        MySingelton.setSelectedVideos(value)
-                    }
-                    checkList?.removeAt(position)
-                    checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
-
-                    holder.clMain.setBackgroundResource(R.color.purple_200)
+                    longPressCheck(position, holder)
                 }
-                for (i in 0 until checkList?.size!!) {
-                    val check = checkList!![i].selected
+            }
 
-                    if (check) {
-                        (context.context as? ViewTypeInterface)?.setSelectedDrawableRes(true)
-                        break
-                    } else {
-                        (context.context as? ViewTypeInterface)?.setSelectedDrawableRes(false)
-                    }
-                }
+            holder.itemView.setOnLongClickListener {
+
+                longPressCheck(position, holder)
+
                 return@setOnLongClickListener true
             }
             holder.optionHolder.setOnClickListener() {
@@ -132,6 +111,59 @@ class VideosListAdapter(private val context: Fragment) :
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun singlePressCheck(position: Int, it: View) {
+        val intent = Intent(it.context, VideoPlayerActivity::class.java)
+        intent.putExtra("video_data", items?.get(position))
+        it.context.startActivity(intent)
+    }
+
+    private fun longPressCheck(position: Int, holder: ViewHolder) {
+        val check = checkList?.get(position)?.selected
+        val value = checkList?.get(position)?.item
+
+        if (check == true) {
+            if (value != null) {
+                MySingelton.removeSelectedVideos(value)
+            }
+
+            checkList?.removeAt(position)
+            checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
+
+            holder.clMain.setBackgroundResource(android.R.color.transparent)
+        } else {
+            if (value != null) {
+                MySingelton.setSelectedVideos(value)
+            }
+            checkList?.removeAt(position)
+            checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
+
+            holder.clMain.setBackgroundResource(R.color.purple_200)
+        }
+        for (i in 0 until checkList?.size!!) {
+            val check = checkList!![i].selected
+
+            if (check) {
+                isLongPress = true
+
+                (context.context as? ViewTypeInterface)?.setSaveCheckRes(true)
+                break
+            } else {
+                isLongPress = false
+
+                (context.context as? ViewTypeInterface)?.setSaveCheckRes(false)
+            }
+        }
+        for (i in 0 until checkList?.size!!) {
+            val check = checkList!![i].selected
+
+            if (!check) {
+                (context.context as? ViewTypeInterface)?.setSelectionCheckRes(false)
+            } else {
+                (context.context as? ViewTypeInterface)?.setSelectionCheckRes(true)
+            }
         }
     }
 
@@ -307,7 +339,6 @@ class VideosListAdapter(private val context: Fragment) :
             newItem?.id,
             newName,
             newItem?.folderName,
-            newItem?.size,
             newFile.path,
             Uri.fromFile(newFile)
         )

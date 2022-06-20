@@ -10,7 +10,6 @@ import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
-import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
@@ -26,7 +25,6 @@ import androidx.viewpager2.widget.ViewPager2
 import com.example.storage_data.R
 import com.example.storage_data.databinding.ActivityMainBinding
 import com.example.storage_data.utils.Interface
-import com.example.storage_data.utils.MySingelton
 import com.example.storage_data.utils.SelectInterface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.view.DocsFragment
@@ -44,14 +42,14 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
     private lateinit var layout: View
     lateinit var viewPager: ViewPager2
     private lateinit var gridChange: ImageView
-    lateinit var selectAll: TextView
-    private lateinit var unSelectAll: TextView
+    lateinit var selectAll: ImageView
     lateinit var save: TextView
 
     private lateinit var tabLayout: TabLayout
     private val WRITE_STORAGE_PERMISSION_REQUEST_CODE = 13
     private val adapter = AdapterTabPager(this)
     private lateinit var currentFragment: Fragment
+    private var selectionCheck: Boolean = false
 
     private var listFragments = arrayOf(
         ImagesFragment(), VideosFragment(),
@@ -85,7 +83,6 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         tabLayout = binding.tabs
         gridChange = binding.gridChange
         selectAll = binding.selectAll
-        unSelectAll = binding.unselectAll
         save = binding.save
 
         gridChange.setOnClickListener() {
@@ -93,13 +90,21 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
             (currentFragment as Interface).gridButtonClick()
         }
         selectAll.setOnClickListener() {
-            currentFragment = listFragments[viewPager.currentItem] as Fragment
-            (currentFragment as SelectInterface).selectButtonClick()
+            if (!selectionCheck) {
+                selectionCheck = true
+                selectAll.setImageResource(R.drawable.ic_baseline_unselect_all)
+
+                currentFragment = listFragments[viewPager.currentItem] as Fragment
+                (currentFragment as SelectInterface).selectButtonClick(selectionCheck)
+            } else {
+                selectionCheck = false
+                selectAll.setImageResource(R.drawable.ic_baseline_select_all)
+
+                currentFragment = listFragments[viewPager.currentItem] as Fragment
+                (currentFragment as SelectInterface).selectButtonClick(selectionCheck)
+            }
         }
-        unSelectAll.setOnClickListener() {
-            currentFragment = listFragments[viewPager.currentItem] as Fragment
-            (currentFragment as SelectInterface).unSelectButtonClick()
-        }
+
         save.setOnClickListener() {
             currentFragment = listFragments[viewPager.currentItem] as Fragment
             (currentFragment as Interface).saveButtonClick()
@@ -123,6 +128,7 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         if (SDK_INT >= Build.VERSION_CODES.R) {
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
             intent.data = Uri.parse("package:$packageName");
+
             startActivityForResult(intent, 2296)
         } else {
             //below android 11
@@ -263,8 +269,23 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         else gridChange.setImageResource(R.drawable.ic_baseline_grid_off)
     }
 
-    override fun setSelectedDrawableRes(enabled: Boolean) {
-        if (enabled) save.visibility = View.VISIBLE
-        else save.visibility = View.GONE
+    override fun setSaveCheckRes(enabled: Boolean) {
+        if (enabled) {
+            save.visibility = View.VISIBLE
+            selectAll.visibility = View.VISIBLE
+        } else {
+            save.visibility = View.GONE
+            selectAll.visibility = View.GONE
+        }
+    }
+
+    override fun setSelectionCheckRes(enabled: Boolean) {
+        if (enabled) {
+            selectionCheck = true
+            selectAll.setImageResource(R.drawable.ic_baseline_unselect_all)
+        } else {
+            selectionCheck = false
+            selectAll.setImageResource(R.drawable.ic_baseline_select_all)
+        }
     }
 }

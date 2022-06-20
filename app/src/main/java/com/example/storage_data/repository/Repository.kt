@@ -17,12 +17,10 @@ class Repository(private val application: Application) {
 
         val columns = arrayOf(
             MediaStore.Images.Media.TITLE,
-            MediaStore.Images.Media.SIZE,
             MediaStore.Images.Media._ID,
             MediaStore.Images.Media.BUCKET_DISPLAY_NAME,
             MediaStore.Images.Media.DATA,
-            MediaStore.Images.Media.DATE_ADDED,
-            MediaStore.Images.Media.BUCKET_ID
+            MediaStore.Images.Media.DATE_ADDED
         )
 
         val orderBy = MediaStore.Images.Media.DATE_TAKEN //order data by date
@@ -44,17 +42,11 @@ class Repository(private val application: Application) {
                     cursor.getColumnIndex(MediaStore.Images.Media.TITLE)
                 val BUCKET_DISPLAY_NAME: Int =
                     cursor.getColumnIndex(MediaStore.Images.Media.BUCKET_DISPLAY_NAME)
-                val BUCKET_ID: Int =
-                    cursor.getColumnIndex(MediaStore.Images.Media.BUCKET_ID)
-                val SIZE: Int =
-                    cursor.getColumnIndex(MediaStore.Images.Media.SIZE)
 
                 val id: String = cursor.getString(ID)
                 val path: String = cursor.getString(DATA)
                 val title: String = cursor.getString(TITLE)
                 val folderName: String? = cursor.getString(BUCKET_DISPLAY_NAME)
-                val folderID: String = cursor.getString(BUCKET_ID)
-                val size: String = cursor.getString(SIZE)
 
                 val file = File(path)
                 val artUriC = Uri.fromFile(file)
@@ -64,7 +56,6 @@ class Repository(private val application: Application) {
                         id,
                         title,
                         folderName,
-                        size,
                         path,
                         artUriC
                     )
@@ -80,12 +71,10 @@ class Repository(private val application: Application) {
 
         val columns = arrayOf(
             MediaStore.Video.Media.TITLE,
-            MediaStore.Video.Media.SIZE,
             MediaStore.Video.Media._ID,
             MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
             MediaStore.Video.Media.DATA,
-            MediaStore.Video.Media.DATE_ADDED,
-            MediaStore.Video.Media.BUCKET_ID
+            MediaStore.Video.Media.DATE_ADDED
         )
         val orderBy = MediaStore.Video.Media.DATE_TAKEN //order data by date
         val collection: Uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
@@ -106,17 +95,11 @@ class Repository(private val application: Application) {
                     cursor.getColumnIndex(MediaStore.Video.Media.TITLE)
                 val BUCKET_DISPLAY_NAME: Int =
                     cursor.getColumnIndex(MediaStore.Video.Media.BUCKET_DISPLAY_NAME)
-                val BUCKET_ID: Int =
-                    cursor.getColumnIndex(MediaStore.Video.Media.BUCKET_ID)
-                val SIZE: Int =
-                    cursor.getColumnIndex(MediaStore.Video.Media.SIZE)
 
                 val id: String = cursor.getString(ID)
                 val path: String = cursor.getString(DATA)
                 val title: String = cursor.getString(TITLE)
                 val folderName: String? = cursor.getString(BUCKET_DISPLAY_NAME)
-                val folderID: String = cursor.getString(BUCKET_ID)
-                val size: String = cursor.getString(SIZE)
 
                 val file = File(path)
                 val artUriC = Uri.fromFile(file)
@@ -126,7 +109,6 @@ class Repository(private val application: Application) {
                         id,
                         title,
                         folderName,
-                        size,
                         path,
                         artUriC
                     )
@@ -146,7 +128,6 @@ class Repository(private val application: Application) {
             MediaStore.Files.FileColumns.DATE_ADDED,
             MediaStore.Files.FileColumns.DATA,
             MediaStore.Files.FileColumns.MIME_TYPE,
-            MediaStore.Files.FileColumns.SIZE,
         )
         val sortOrder = MediaStore.Files.FileColumns.DATE_ADDED + " DESC"
         val selection = MediaStore.Files.FileColumns.MIME_TYPE + " = ?"
@@ -170,15 +151,12 @@ class Repository(private val application: Application) {
                     val columnID: Int = cursor.getColumnIndex(MediaStore.Files.FileColumns._ID)
                     val columnData: Int =
                         cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
-                    val columnSize: Int =
-                        cursor.getColumnIndex(MediaStore.Files.FileColumns.SIZE)
                     val columnName: Int =
                         cursor.getColumnIndex(MediaStore.Files.FileColumns.TITLE)
                     do {
                         val id: String = cursor.getString(columnID)
                         val path: String = cursor.getString(columnData)
                         val name: String = cursor.getString(columnName)
-                        val size: String = cursor.getString(columnSize)
 
                         val file = File(path)
                         val fileUri = Uri.fromFile(file)
@@ -189,7 +167,6 @@ class Repository(private val application: Application) {
                                     id,
                                     name,
                                     null,
-                                    size,
                                     path,
                                     fileUri
                                 )

@@ -38,6 +38,7 @@ class DocsListAdapter(
     private val listItem = 0
     private val gridItem = 1
     var isSwitchView = true
+    var isLongPress = false
 
     // create new views
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -57,42 +58,26 @@ class DocsListAdapter(
             holder.nameHolder.text = items?.get(position)?.title
 
             if (checkList?.get(position)?.selected == true) {
+                isLongPress = true
+
                 holder.clMain.setBackgroundResource(R.color.purple_200)
             } else {
+                isLongPress = false
+
                 holder.clMain.setBackgroundResource(android.R.color.transparent)
             }
-            holder.itemView.setOnLongClickListener {
-                val check = checkList?.get(position)?.selected
-                val value = checkList?.get(position)?.item
-
-                if (check == true) {
-                    if (value != null) {
-                        MySingelton.removeSelectedDocs(value)
-                    }
-
-                    checkList?.removeAt(position)
-                    checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
-
-                    holder.clMain.setBackgroundResource(android.R.color.transparent)
+            holder.itemView.setOnClickListener() {
+                if (!isLongPress) {
+                    Toast.makeText(context.context, items?.get(position)?.title, Toast.LENGTH_SHORT)
+                        .show()
                 } else {
-                    if (value != null) {
-                        MySingelton.setSelectedDocs(value)
-                    }
-                    checkList?.removeAt(position)
-                    checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
-
-                    holder.clMain.setBackgroundResource(R.color.purple_200)
+                    longPressCheck(position, holder)
                 }
-                for (i in 0 until checkList?.size!!) {
-                    val check = checkList!![i].selected
+            }
+            holder.itemView.setOnLongClickListener {
 
-                    if (check) {
-                        (context.context as? ViewTypeInterface)?.setSelectedDrawableRes(true)
-                        break
-                    } else {
-                        (context.context as? ViewTypeInterface)?.setSelectedDrawableRes(false)
-                    }
-                }
+                longPressCheck(position, holder)
+
                 return@setOnLongClickListener true
             }
 
@@ -101,6 +86,7 @@ class DocsListAdapter(
                 popupMenu.menuInflater.inflate(R.menu.popup_menu, popupMenu.menu)
                 popupMenu.setOnMenuItemClickListener { item ->
                     newPosition = position
+                    newItem = document
 
                     when (item.itemId) {
                         R.id.action_rename -> renameFunction(newPosition)
@@ -118,6 +104,54 @@ class DocsListAdapter(
 
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun longPressCheck(position: Int, holder: ViewHolder) {
+        val check = checkList?.get(position)?.selected
+        val value = checkList?.get(position)?.item
+
+        if (check == true) {
+            if (value != null) {
+                MySingelton.removeSelectedDocs(value)
+            }
+
+            checkList?.removeAt(position)
+            checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
+
+            holder.clMain.setBackgroundResource(android.R.color.transparent)
+        } else {
+            if (value != null) {
+                MySingelton.setSelectedDocs(value)
+            }
+            checkList?.removeAt(position)
+            checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
+
+            holder.clMain.setBackgroundResource(R.color.purple_200)
+        }
+        for (i in 0 until checkList?.size!!) {
+            val check = checkList!![i].selected
+
+            if (check) {
+                isLongPress = true
+
+                (context.context as? ViewTypeInterface)?.setSaveCheckRes(true)
+                break
+            } else {
+                isLongPress = false
+
+                (context.context as? ViewTypeInterface)?.setSaveCheckRes(false)
+            }
+        }
+        for (i in 0 until checkList?.size!!) {
+            val check = checkList!![i].selected
+
+            if (!check) {
+
+                (context.context as? ViewTypeInterface)?.setSelectionCheckRes(false)
+            } else {
+                (context.context as? ViewTypeInterface)?.setSelectionCheckRes(true)
+            }
         }
     }
 
@@ -140,6 +174,7 @@ class DocsListAdapter(
     fun getItemViewType(): Boolean {
         return isSwitchView
     }
+
     fun getSelectedItemsCheck(): Boolean {
         var checkVal: Boolean = false
         for (i in 0 until checkList?.size!!) {
@@ -152,6 +187,7 @@ class DocsListAdapter(
         }
         return checkVal
     }
+
     fun toggleItemViewType(): Boolean {
         isSwitchView = !isSwitchView
         return isSwitchView
@@ -228,7 +264,6 @@ class DocsListAdapter(
             newItem?.id,
             newName,
             null,
-            newItem?.size,
             newFile.path,
             Uri.fromFile(newFile)
         )

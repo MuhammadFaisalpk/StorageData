@@ -6,10 +6,9 @@ import android.os.Parcelable
 
 data class MyModel(
     val id: String?, var title: String?, val folderName: String?,
-    val size: String?, var path: String?, var artUri: Uri?
+    var path: String?, var artUri: Uri?
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
-        parcel.readString(),
         parcel.readString(),
         parcel.readString(),
         parcel.readString(),
@@ -21,7 +20,6 @@ data class MyModel(
         parcel.writeString(id)
         parcel.writeString(title)
         parcel.writeString(folderName)
-        parcel.writeString(size)
         parcel.writeString(path)
         parcel.writeParcelable(artUri, flags)
     }
