@@ -4,9 +4,15 @@ import android.app.Application
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.provider.MediaStore
+import android.view.View
 import android.webkit.MimeTypeMap
 import com.example.storage_data.model.MyModel
+import com.example.storage_data.model.SavedModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 
 
@@ -179,4 +185,21 @@ class Repository(private val application: Application) {
         return listDocuments
     }
 
+    fun fetchAllSaved(): ArrayList<SavedModel> {
+        val listSaved: ArrayList<SavedModel> = ArrayList()
+
+        val file = File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
+        if (file.exists()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                var filesList = file.listFiles()
+                filesList.forEachIndexed() { _, file ->
+                    val savedModel = SavedModel(file.name, file.path)
+
+                    listSaved.add(savedModel)
+                }
+            }
+        }
+
+        return listSaved
+    }
 }

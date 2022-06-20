@@ -8,13 +8,16 @@ import android.view.ViewGroup
 import android.widget.ProgressBar
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
 import com.example.storage_data.adapter.SavedListAdapter
 import com.example.storage_data.databinding.FragmentDocsBinding
+import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SavedModel
+import com.example.storage_data.model.SelectedModel
 import com.example.storage_data.utils.Interface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
@@ -44,7 +47,8 @@ class SavedFragment : Fragment(), Interface {
         )
 
         initViews()
-        showImageList()
+        getAllSaved()
+//        showImageList()
 
         return binding.root
     }
@@ -62,22 +66,22 @@ class SavedFragment : Fragment(), Interface {
         recyclerView.adapter = savedListAdapter
     }
 
-    private fun showImageList() {
-        val file = File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
-        if (file.exists()) {
-            CoroutineScope(Dispatchers.IO).launch {
-                var filesList = file.listFiles()
-                filesList.forEachIndexed() { _, file ->
-                    val savedModel = SavedModel(file.name, file.path)
+    private fun getAllSaved() {
+        filesArray?.clear()
 
-                    filesArray?.add(savedModel)
-                }
-            }
-            CoroutineScope(Dispatchers.Main).launch {
-                progressBar.visibility = View.GONE
-                filesArray?.let { savedListAdapter.setListItems(it) }
-            }
+        viewModal = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
+        )[ViewModel::class.java]
+
+        viewModal.getSaved().observe(viewLifecycleOwner) { paths ->
+            // update UI
+            filesArray = paths as ArrayList<SavedModel>?
+
+            progressBar.visibility = View.GONE
+            filesArray?.let { savedListAdapter.setListItems(it) }
         }
+        viewModal.loadSaved()
     }
 
     override fun onResume() {

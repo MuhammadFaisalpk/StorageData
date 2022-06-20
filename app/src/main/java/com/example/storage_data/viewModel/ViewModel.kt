@@ -3,10 +3,12 @@ package com.example.storage_data.viewModel
 import android.app.Application
 import androidx.lifecycle.*
 import com.example.storage_data.model.MyModel
+import com.example.storage_data.model.SavedModel
 import com.example.storage_data.repository.Repository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class ViewModel(application: Application) : AndroidViewModel(application) {
     private var repository: Repository
@@ -25,6 +27,10 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         MutableLiveData<List<MyModel>>()
     }
 
+    private val saved: MutableLiveData<List<SavedModel>> by lazy {
+        MutableLiveData<List<SavedModel>>()
+    }
+
     fun loadImages() {
         viewModelScope.launch() {
             doLoadImages()
@@ -40,6 +46,12 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
     fun loadDocs() {
         viewModelScope.launch() {
             doLoadDocuments()
+        }
+    }
+
+    fun loadSaved() {
+        viewModelScope.launch() {
+            doLoadSaved()
         }
     }
 
@@ -67,7 +79,16 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private suspend fun doLoadSaved() {
+        withContext(Dispatchers.IO) {
+            val allSaved: ArrayList<SavedModel> = repository.fetchAllSaved()
+
+            saved.postValue(allSaved)
+        }
+    }
+
     fun getImages(): LiveData<List<MyModel>> = images
     fun getVideos(): LiveData<List<MyModel>> = videos
     fun getDocs(): LiveData<List<MyModel>> = documents
+    fun getSaved(): LiveData<List<SavedModel>> = saved
 }
