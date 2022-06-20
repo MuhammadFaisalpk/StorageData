@@ -1,12 +1,9 @@
 package com.example.storage_data.view
 
 
-import android.content.ContentValues
 import android.media.MediaScannerConnection
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.provider.MediaStore
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -24,10 +21,7 @@ import com.example.storage_data.adapter.VideosListAdapter
 import com.example.storage_data.databinding.FragmentVideosBinding
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
-import com.example.storage_data.utils.Interface
-import com.example.storage_data.utils.MySingelton
-import com.example.storage_data.utils.SelectInterface
-import com.example.storage_data.utils.ViewTypeInterface
+import com.example.storage_data.utils.*
 import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,11 +34,11 @@ import kotlin.collections.ArrayList
 class VideosFragment : Fragment(), Interface, SelectInterface {
 
     private lateinit var viewModal: ViewModel
-    lateinit var videosListAdapter: VideosListAdapter
+    var videosListAdapter: VideosListAdapter = VideosListAdapter(this)
     private lateinit var binding: FragmentVideosBinding
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
-    private lateinit var videosArray: ArrayList<MyModel>
+    private var videosArray: ArrayList<MyModel>? = ArrayList()
     private var arrayCheck: ArrayList<SelectedModel>? = ArrayList()
 
     override fun onCreateView(
@@ -58,7 +52,7 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         )
 
         initViews()
-        getAllItems()
+        getAllItemsList()
 
         return binding.root
     }
@@ -73,7 +67,7 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
             RecyclerView.VERTICAL, false
         )
 
-        videosListAdapter = VideosListAdapter(this)
+//        videosListAdapter = VideosListAdapter(this)
         recyclerView.adapter = videosListAdapter
 
     }
@@ -88,7 +82,7 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         (activity as? ViewTypeInterface)?.setSaveCheckRes(isSelected)
     }
 
-    private fun getAllItems() {
+    private fun getAllItemsList() {
         viewModal = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
@@ -97,15 +91,22 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         viewModal.getVideos().observe(viewLifecycleOwner) { paths ->
             // update UI
             videosArray = paths as ArrayList<MyModel>
-            for (item in videosArray) {
-                arrayCheck?.add(SelectedModel(false, item))
-            }
+
             progressBar.visibility = View.GONE
-            videosListAdapter.setListItems(videosArray)
-            videosListAdapter.checkSelectedItems(arrayCheck!!)
+            videosListAdapter.setListItems(videosArray!!)
+
+            clearAllSelection()
         }
         viewModal.loadVideos()
 
+    }
+
+    private fun clearAllSelection() {
+        arrayCheck?.clear()
+        for (item in videosArray!!) {
+            arrayCheck?.add(SelectedModel(false, item))
+        }
+        videosListAdapter.checkSelectedItems(arrayCheck!!)
     }
 
     override fun gridButtonClick() {
@@ -120,8 +121,8 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         (activity as? ViewTypeInterface)?.setGridDrawableRes(getSwitchCheck)
     }
 
-    private fun saveVideoFile(filePath: String?) {
-        val newName = "VID_${System.currentTimeMillis()}.mp4"
+    private fun saveVideoFile(pos: Int, filePath: String?) {
+        val newName = "VID_${System.currentTimeMillis() + pos}.mp4"
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -181,40 +182,50 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         }
         if (newArray != null) {
             for (i in 0 until newArray.size) {
-                saveVideoFile(newArray[0].artUri?.path)
+                saveVideoFile(i, newArray[0].artUri?.path)
             }
             Toast.makeText(context, "Selected files saved.", Toast.LENGTH_SHORT).show()
+            unSelectAllItems()
+
         }
     }
 
     override fun selectButtonClick(selectionCheck: Boolean) {
         if (selectionCheck) {
-            arrayCheck?.clear()
-
-            for (item in videosArray) {
-                arrayCheck?.add(SelectedModel(true, item))
-            }
-
-            videosListAdapter.checkSelectedItems(arrayCheck!!)
-
-            (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
-
-            for (item in videosArray) {
-                MySingelton.setSelectedImages(item)
-            }
+            selectAllItems()
         } else {
-            arrayCheck?.clear()
+            unSelectAllItems()
+        }
+    }
 
-            for (item in videosArray) {
-                arrayCheck?.add(SelectedModel(false, item))
-            }
-            videosListAdapter.checkSelectedItems(arrayCheck!!)
+    private fun selectAllItems() {
+        arrayCheck?.clear()
 
-            (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
+        for (item in videosArray!!) {
+            arrayCheck?.add(SelectedModel(true, item))
+        }
 
-            for (item in videosArray) {
-                MySingelton.removeSelectedImages(item)
-            }
+        videosListAdapter.checkSelectedItems(arrayCheck!!)
+
+        (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
+
+        for (item in videosArray!!) {
+            MySingelton.setSelectedImages(item)
+        }
+    }
+
+    private fun unSelectAllItems() {
+        arrayCheck?.clear()
+
+        for (item in videosArray!!) {
+            arrayCheck?.add(SelectedModel(false, item))
+        }
+        videosListAdapter.checkSelectedItems(arrayCheck!!)
+
+        (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
+
+        for (item in videosArray!!) {
+            MySingelton.removeSelectedImages(item)
         }
     }
 }

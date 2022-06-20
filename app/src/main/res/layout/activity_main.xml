@@ -42,7 +42,7 @@
                 android:src="@drawable/ic_baseline_grid_on"
                 android:text="@string/save"
                 android:textColor="@color/white"
-                android:textSize="14sp"
+                android:textSize="18sp"
                 android:visibility="gone" />
 
         </androidx.appcompat.widget.Toolbar>

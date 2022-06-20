@@ -25,10 +25,7 @@ import com.example.storage_data.adapter.ImagesListAdapter
 import com.example.storage_data.databinding.FragmentImagesBinding
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
-import com.example.storage_data.utils.Interface
-import com.example.storage_data.utils.MySingelton
-import com.example.storage_data.utils.SelectInterface
-import com.example.storage_data.utils.ViewTypeInterface
+import com.example.storage_data.utils.*
 import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -59,7 +56,7 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
         )
 
         initViews()
-        getAllItems()
+        getAllItemsList()
 
         return binding.root
     }
@@ -89,10 +86,7 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
         (activity as? ViewTypeInterface)?.setSaveCheckRes(isSelected)
     }
 
-    private fun getAllItems() {
-        imagesArray?.clear()
-        arrayCheck?.clear()
-
+    private fun getAllItemsList() {
         viewModal = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
@@ -101,15 +95,21 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
         viewModal.getImages().observe(viewLifecycleOwner) { paths ->
             // update UI
             imagesArray = paths as ArrayList<MyModel>?
-            for (item in imagesArray!!) {
-                arrayCheck?.add(SelectedModel(false, item))
-            }
+
             progressBar.visibility = View.GONE
             imagesListAdapter.setListItems(imagesArray!!)
-            imagesListAdapter.checkSelectedItems(arrayCheck!!)
 
+            clearAllSelection()
         }
         viewModal.loadImages()
+    }
+
+    private fun clearAllSelection() {
+        arrayCheck?.clear()
+        for (item in imagesArray!!) {
+            arrayCheck?.add(SelectedModel(false, item))
+        }
+        imagesListAdapter.checkSelectedItems(arrayCheck!!)
     }
 
     private fun getThumbnail(uri: Uri?): Bitmap? {
@@ -158,15 +158,55 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
 //        Toast.makeText(context, "$newName saved.", Toast.LENGTH_SHORT).show()
     }
 
-    override fun gridButtonClick() {
-        val isSwitched: Boolean = imagesListAdapter.toggleItemViewType()
-        recyclerView.layoutManager =
-            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
-                context,
-                3
-            )
-        val getSwitchCheck: Boolean = imagesListAdapter.getItemViewType()
-        (activity as? ViewTypeInterface)?.setGridDrawableRes(getSwitchCheck)
+    private fun saveImagesFile(pos: Int, filePath: String?) {
+        val newName = "IMG_${System.currentTimeMillis() + pos}.jpg"
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val currentFile = filePath?.let { File(it) }
+
+                val wallpaperDirectory =
+                    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
+
+                val newFile = File(
+                    wallpaperDirectory,
+                    newName
+                )
+                if (!wallpaperDirectory.exists()) {
+                    wallpaperDirectory.mkdirs()
+                }
+                if (currentFile != null) {
+                    if (currentFile.exists()) {
+                        val `in`: InputStream = FileInputStream(currentFile)
+                        val out: OutputStream = FileOutputStream(newFile)
+
+                        // Copy the bits from instream to outstream
+                        val buf = ByteArray(1024)
+                        var len: Int
+                        while (`in`.read(buf).also { len = it } > 0) {
+                            out.write(buf, 0, len)
+                        }
+                        `in`.close()
+                        out.close()
+
+                        MediaScannerConnection.scanFile(
+                            context, arrayOf(newFile.absolutePath), null
+                        ) { path, uri ->
+                            Log.i("ExternalStorage", "Scanned $path:")
+                            Log.i("ExternalStorage", "-> uri=$uri")
+                        }
+
+                        Log.i("ExternalStorage", "Video Saved.")
+
+                    } else {
+                        Log.i("ExternalStorage", "Video saving failed.")
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+//        Toast.makeText(context, "$newName saved.", Toast.LENGTH_SHORT).show()
     }
 
     fun setProgressDialog() {
@@ -212,6 +252,7 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
 
         // Displaying the dialog
         dialog = builder.create()
+        dialog.show()
 
         val window: Window? = dialog.window
         if (window != null) {
@@ -229,6 +270,17 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
         }
     }
 
+    override fun gridButtonClick() {
+        val isSwitched: Boolean = imagesListAdapter.toggleItemViewType()
+        recyclerView.layoutManager =
+            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
+                context,
+                3
+            )
+        val getSwitchCheck: Boolean = imagesListAdapter.getItemViewType()
+        (activity as? ViewTypeInterface)?.setGridDrawableRes(getSwitchCheck)
+    }
+
     override fun saveButtonClick() {
 
         var newArray: ArrayList<MyModel>? = ArrayList()
@@ -241,44 +293,56 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
         if (newArray != null) {
 
 //            setProgressDialog()
-//            dialog.show()
 
             for (i in 0 until newArray.size) {
-                val bitmap: Bitmap = getThumbnail(newArray[i].artUri)!!
-                saveImage(bitmap)
+//                val bitmap: Bitmap = getThumbnail(newArray[i].artUri)!!
+//
+//                saveImage(bitmap)
+//
+                saveImagesFile(i, newArray[i].path)
             }
+
             Toast.makeText(context, "Selected files saved.", Toast.LENGTH_SHORT).show()
+            unSelectAllItems()
         }
     }
 
     override fun selectButtonClick(selectionCheck: Boolean) {
         if (selectionCheck) {
-            arrayCheck?.clear()
-
-            for (item in imagesArray!!) {
-                arrayCheck?.add(SelectedModel(true, item))
-            }
-
-            imagesListAdapter.checkSelectedItems(arrayCheck!!)
-
-            (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
-
-            for (item in imagesArray!!) {
-                MySingelton.setSelectedImages(item)
-            }
+            selectAllItems()
         } else {
-            arrayCheck?.clear()
+            unSelectAllItems()
+        }
+    }
 
-            for (item in imagesArray!!) {
-                arrayCheck?.add(SelectedModel(false, item))
-            }
-            imagesListAdapter.checkSelectedItems(arrayCheck!!)
+    private fun selectAllItems() {
+        arrayCheck?.clear()
 
-            (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
+        for (item in imagesArray!!) {
+            arrayCheck?.add(SelectedModel(true, item))
+        }
 
-            for (item in imagesArray!!) {
-                MySingelton.removeSelectedImages(item)
-            }
+        imagesListAdapter.checkSelectedItems(arrayCheck!!)
+
+        (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
+
+        for (item in imagesArray!!) {
+            MySingelton.setSelectedImages(item)
+        }
+    }
+
+    private fun unSelectAllItems() {
+        arrayCheck?.clear()
+
+        for (item in imagesArray!!) {
+            arrayCheck?.add(SelectedModel(false, item))
+        }
+        imagesListAdapter.checkSelectedItems(arrayCheck!!)
+
+        (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
+
+        for (item in imagesArray!!) {
+            MySingelton.removeSelectedImages(item)
         }
     }
 }

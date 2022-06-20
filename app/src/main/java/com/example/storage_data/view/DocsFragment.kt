@@ -20,10 +20,7 @@ import com.example.storage_data.adapter.DocsListAdapter
 import com.example.storage_data.databinding.FragmentDocsBinding
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
-import com.example.storage_data.utils.Interface
-import com.example.storage_data.utils.MySingelton
-import com.example.storage_data.utils.SelectInterface
-import com.example.storage_data.utils.ViewTypeInterface
+import com.example.storage_data.utils.*
 import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +50,7 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
         )
 
         initViews()
-        getAllItems()
+        getAllItemsList()
 
         return binding.root
     }
@@ -81,7 +78,7 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
         (activity as? ViewTypeInterface)?.setSaveCheckRes(isSelected)
     }
 
-    private fun getAllItems() {
+    private fun getAllItemsList() {
         viewModal = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
@@ -91,15 +88,20 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
             // update UI
             docsArray = paths as ArrayList<MyModel>
 
-            for (item in docsArray) {
-                arrayCheck?.add(SelectedModel(false, item))
-            }
-
             progressBar.visibility = View.GONE
             docsListAdapter.setListItems(docsArray)
-            docsListAdapter.checkSelectedItems(arrayCheck!!)
+
+            clearAllSelection()
         }
         viewModal.loadDocs()
+    }
+
+    private fun clearAllSelection() {
+        arrayCheck?.clear()
+        for (item in docsArray) {
+            arrayCheck?.add(SelectedModel(false, item))
+        }
+        docsListAdapter.checkSelectedItems(arrayCheck!!)
     }
 
     override fun gridButtonClick() {
@@ -123,14 +125,16 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
         }
         if (newArray != null) {
             for (i in 0 until newArray.size) {
-                saveDocumentFile(newArray[0].artUri?.path)
+                saveDocumentFile(i, newArray[0].artUri?.path)
             }
         }
         Toast.makeText(context, "Selected files saved.", Toast.LENGTH_SHORT).show()
+        unSelectAllItems()
+
     }
 
-    private fun saveDocumentFile(filePath: String?) {
-        val newName = "DOC_${System.currentTimeMillis()}.pdf"
+    private fun saveDocumentFile(pos: Int, filePath: String?) {
+        val newName = "DOC_${System.currentTimeMillis() + pos}.pdf"
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -182,33 +186,40 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
 
     override fun selectButtonClick(selectionCheck: Boolean) {
         if (selectionCheck) {
-            arrayCheck?.clear()
-
-            for (item in docsArray) {
-                arrayCheck?.add(SelectedModel(true, item))
-            }
-
-            docsListAdapter.checkSelectedItems(arrayCheck!!)
-
-            (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
-
-            for (item in docsArray) {
-                MySingelton.setSelectedImages(item)
-            }
+            selectAllItems()
         } else {
-            arrayCheck?.clear()
-
-            for (item in docsArray) {
-                arrayCheck?.add(SelectedModel(false, item))
-            }
-            docsListAdapter.checkSelectedItems(arrayCheck!!)
-
-            (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
-
-            for (item in docsArray) {
-                MySingelton.removeSelectedImages(item)
-            }
+            unSelectAllItems()
         }
     }
 
+    private fun selectAllItems() {
+        arrayCheck?.clear()
+
+        for (item in docsArray!!) {
+            arrayCheck?.add(SelectedModel(true, item))
+        }
+
+        docsListAdapter.checkSelectedItems(arrayCheck!!)
+
+        (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
+
+        for (item in docsArray!!) {
+            MySingelton.setSelectedImages(item)
+        }
+    }
+
+    private fun unSelectAllItems() {
+        arrayCheck?.clear()
+
+        for (item in docsArray!!) {
+            arrayCheck?.add(SelectedModel(false, item))
+        }
+        docsListAdapter.checkSelectedItems(arrayCheck!!)
+
+        (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
+
+        for (item in docsArray!!) {
+            MySingelton.removeSelectedImages(item)
+        }
+    }
 }

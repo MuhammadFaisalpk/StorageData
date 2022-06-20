@@ -1,13 +1,7 @@
 package com.example.storage_data.adapter
 
-import android.app.Activity
 import android.app.Dialog
-import android.content.ContentUris
 import android.media.MediaScannerConnection
-import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
-import android.provider.MediaStore.VOLUME_INTERNAL
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -17,12 +11,11 @@ import android.widget.*
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.storage_data.R
-import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SavedModel
 import com.example.storage_data.model.SelectedModel
-import com.example.storage_data.utils.MySingelton
-import com.example.storage_data.utils.ViewTypeInterface
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
@@ -51,12 +44,20 @@ class SavedListAdapter(
     }
 
     // binds the list items to a view
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, pos: Int) {
         try {
-            val files = items?.get(position)
+            val position = holder.adapterPosition
 
-            holder.nameHolder.text = files?.name
-//            holder.fnameHolder.text = files?.path
+            val files = items?.get(position)
+            var name = files?.name
+            var path = files?.path
+
+            holder.nameHolder.text = name
+
+            Glide.with(context)
+                .load(path)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(holder.imageHolder)
 
             holder.optionHolder.setOnClickListener() {
                 val popupMenu = PopupMenu(it.context, holder.optionHolder)
@@ -209,8 +210,8 @@ class SavedListAdapter(
         return isSwitchView
     }
 
-    fun setListItems(items: ArrayList<SavedModel>) {
-        this.items = items
+    fun setListItems(data: ArrayList<SavedModel>) {
+        items = data
         notifyDataSetChanged()
     }
 

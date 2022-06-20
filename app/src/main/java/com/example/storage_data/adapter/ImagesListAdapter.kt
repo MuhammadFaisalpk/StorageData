@@ -405,8 +405,8 @@ class ImagesListAdapter(
         notifyDataSetChanged()
     }
 
-    fun setListItems(items: ArrayList<MyModel>) {
-        this.items = items
+    fun setListItems(data: ArrayList<MyModel>) {
+        this.items = data
         notifyDataSetChanged()
     }
 

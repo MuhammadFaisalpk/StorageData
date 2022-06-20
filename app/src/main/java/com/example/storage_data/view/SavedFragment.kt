@@ -15,9 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
 import com.example.storage_data.adapter.SavedListAdapter
 import com.example.storage_data.databinding.FragmentDocsBinding
-import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SavedModel
-import com.example.storage_data.model.SelectedModel
 import com.example.storage_data.utils.Interface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
@@ -25,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
+
 
 class SavedFragment : Fragment(), Interface {
 
@@ -47,8 +46,6 @@ class SavedFragment : Fragment(), Interface {
         )
 
         initViews()
-        getAllSaved()
-//        showImageList()
 
         return binding.root
     }
@@ -56,6 +53,8 @@ class SavedFragment : Fragment(), Interface {
     private fun initViews() {
 
         recyclerView = binding.recyclerView
+        recyclerView.setHasFixedSize(true);
+
         progressBar = binding.progressBar
 
         recyclerView.layoutManager = LinearLayoutManager(
@@ -66,9 +65,34 @@ class SavedFragment : Fragment(), Interface {
         recyclerView.adapter = savedListAdapter
     }
 
-    private fun getAllSaved() {
-        filesArray?.clear()
+    override fun onResume() {
+        super.onResume()
 
+//        getAllSavedList()
+        showSavedList()
+
+        val isSwitched: Boolean = savedListAdapter.getItemViewType()
+        (activity as? ViewTypeInterface)?.setGridDrawableRes(isSwitched)
+    }
+
+    private fun showSavedList() {
+        val file = File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
+        if (file.exists()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                filesArray?.clear()
+                file.listFiles()?.forEachIndexed() { _, file ->
+                    val savedModel = SavedModel(file.name, file.path)
+                    filesArray?.add(savedModel)
+                }
+            }
+            CoroutineScope(Dispatchers.Main).launch {
+                progressBar.visibility = View.GONE
+                filesArray?.let { savedListAdapter.setListItems(it) }
+            }
+        }
+    }
+
+    private fun getAllSavedList() {
         viewModal = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
@@ -77,19 +101,13 @@ class SavedFragment : Fragment(), Interface {
         viewModal.getSaved().observe(viewLifecycleOwner) { paths ->
             // update UI
             filesArray = paths as ArrayList<SavedModel>?
-
             progressBar.visibility = View.GONE
+
             filesArray?.let { savedListAdapter.setListItems(it) }
         }
         viewModal.loadSaved()
     }
 
-    override fun onResume() {
-        super.onResume()
-
-        val isSwitched: Boolean = savedListAdapter.getItemViewType()
-        (activity as? ViewTypeInterface)?.setGridDrawableRes(isSwitched)
-    }
 
     override fun gridButtonClick() {
         val isSwitched: Boolean = savedListAdapter.toggleItemViewType()
