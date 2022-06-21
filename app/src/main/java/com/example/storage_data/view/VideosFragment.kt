@@ -1,6 +1,9 @@
 package com.example.storage_data.view
 
 
+import android.app.Dialog
+import android.content.Context
+import android.content.SharedPreferences
 import android.media.MediaScannerConnection
 import android.os.Bundle
 import android.os.Environment
@@ -26,20 +29,22 @@ import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.*
-import java.util.*
 import kotlin.collections.ArrayList
 
 
-class VideosFragment : Fragment(), Interface, SelectInterface {
+class VideosFragment : Fragment(), SelectionInterface {
 
     private lateinit var viewModal: ViewModel
-    var videosListAdapter: VideosListAdapter = VideosListAdapter(this)
+    lateinit var videosListAdapter: VideosListAdapter
     private lateinit var binding: FragmentVideosBinding
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private var videosArray: ArrayList<MyModel>? = ArrayList()
     private var arrayCheck: ArrayList<SelectedModel>? = ArrayList()
+    private var dialog: Dialog? = null
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -58,6 +63,11 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
     }
 
     private fun initViews() {
+        sharedPreferences =
+            context?.getSharedPreferences(
+                "kotlinsharedpreference",
+                Context.MODE_PRIVATE
+            )!!
 
         recyclerView = binding.recyclerView
         progressBar = binding.progressBar
@@ -67,9 +77,10 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
             RecyclerView.VERTICAL, false
         )
 
-//        videosListAdapter = VideosListAdapter(this)
+        videosListAdapter = VideosListAdapter(this)
         recyclerView.adapter = videosListAdapter
 
+        dialog = context?.let { SavingDialog.progressDialog(it) }
     }
 
     override fun onResume() {
@@ -80,6 +91,13 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
 
         val isSelected: Boolean = videosListAdapter.getSelectedItemsCheck()
         (activity as? ViewTypeInterface)?.setSaveCheckRes(isSelected)
+
+        val sharedImages = sharedPreferences.getBoolean("long_press_images", false)
+        val sharedDocs = sharedPreferences.getBoolean("long_press_docs", false)
+
+        if (sharedImages || sharedDocs) {
+            unSelectAllItems()
+        }
     }
 
     private fun getAllItemsList() {
@@ -95,18 +113,10 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
             progressBar.visibility = View.GONE
             videosListAdapter.setListItems(videosArray!!)
 
-            clearAllSelection()
+            unSelectAllItems()
         }
         viewModal.loadVideos()
 
-    }
-
-    private fun clearAllSelection() {
-        arrayCheck?.clear()
-        for (item in videosArray!!) {
-            arrayCheck?.add(SelectedModel(false, item))
-        }
-        videosListAdapter.checkSelectedItems(arrayCheck!!)
     }
 
     override fun gridButtonClick() {
@@ -119,6 +129,82 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         val getSwitchCheck: Boolean = videosListAdapter.getItemViewType()
 
         (activity as? ViewTypeInterface)?.setGridDrawableRes(getSwitchCheck)
+    }
+
+    override fun saveButtonClick() {
+        var newArray: ArrayList<MyModel>? = ArrayList()
+
+        for (item in arrayCheck!!) {
+            if (item.selected) {
+                newArray?.add(item.item)
+            }
+        }
+        if (newArray != null) {
+
+            dialog?.show()
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    saveVideos(newArray)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            unSelectAllItems()
+        }
+    }
+
+    private suspend fun saveVideos(
+        list: ArrayList<MyModel>,
+    ) {
+        withContext(Dispatchers.IO) {
+            list.forEachIndexed { index, imageModel ->
+
+                val sourceFile = File(imageModel.path!!)
+
+                val directory =
+                    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
+
+                val dFiles = File(
+                    directory,
+                    sourceFile.name
+                )
+                if (!directory.exists()) {
+                    directory.mkdirs()
+                }
+
+                try {
+                    if (sourceFile.exists()) {
+
+                        copySelectedImages(sourceFile, dFiles)
+
+                    }
+                } catch (e: Exception) {
+                    Log.e("TAG", "onSavedItem:Not Saved ")
+                }
+                if (index == list.size - 1) {
+                    dialog?.dismiss()
+                }
+            }
+        }
+    }
+
+    private fun copySelectedImages(src: File, dest: File) {
+        FileInputStream(src).use { fis ->
+            FileOutputStream(dest).use { os ->
+                val buffer = ByteArray(1024)
+                var len: Int
+                while (fis.read(buffer).also { len = it } != -1) {
+                    os.write(buffer, 0, len)
+                }
+                MediaScannerConnection.scanFile(
+                    context, arrayOf(dest.absolutePath), null
+                ) { path, uri ->
+                    Log.i("ExternalStorage", "Scanned $path:")
+                    Log.i("ExternalStorage", "-> uri=$uri")
+                }
+            }
+        }
     }
 
     private fun saveVideoFile(pos: Int, filePath: String?) {
@@ -172,24 +258,6 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
 //        Toast.makeText(context, "$newName saved.", Toast.LENGTH_SHORT).show()
     }
 
-    override fun saveButtonClick() {
-        var newArray: ArrayList<MyModel>? = ArrayList()
-
-        for (item in arrayCheck!!) {
-            if (item.selected) {
-                newArray?.add(item.item)
-            }
-        }
-        if (newArray != null) {
-            for (i in 0 until newArray.size) {
-                saveVideoFile(i, newArray[0].artUri?.path)
-            }
-            Toast.makeText(context, "Selected files saved.", Toast.LENGTH_SHORT).show()
-            unSelectAllItems()
-
-        }
-    }
-
     override fun selectButtonClick(selectionCheck: Boolean) {
         if (selectionCheck) {
             selectAllItems()
@@ -209,9 +277,11 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
 
         (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
 
-        for (item in videosArray!!) {
-            MySingelton.setSelectedVideos(item)
-        }
+        val editor: SharedPreferences.Editor? = sharedPreferences.edit()
+        editor?.putBoolean("long_press_images", false)
+        editor?.putBoolean("long_press_videos", true)
+        editor?.putBoolean("long_press_docs", false)
+        editor?.apply()
     }
 
     private fun unSelectAllItems() {
@@ -223,9 +293,5 @@ class VideosFragment : Fragment(), Interface, SelectInterface {
         videosListAdapter.checkSelectedItems(arrayCheck!!)
 
         (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
-
-        for (item in videosArray!!) {
-            MySingelton.removeSelectedVideos(item)
-        }
     }
 }

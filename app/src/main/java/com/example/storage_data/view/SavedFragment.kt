@@ -16,7 +16,7 @@ import com.example.storage_data.R
 import com.example.storage_data.adapter.SavedListAdapter
 import com.example.storage_data.databinding.FragmentDocsBinding
 import com.example.storage_data.model.SavedModel
-import com.example.storage_data.utils.Interface
+import com.example.storage_data.utils.SelectionInterface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 import java.io.File
 
 
-class SavedFragment : Fragment(), Interface {
+class SavedFragment : Fragment(), SelectionInterface {
 
     private lateinit var viewModal: ViewModel
     lateinit var savedListAdapter: SavedListAdapter
@@ -46,6 +46,7 @@ class SavedFragment : Fragment(), Interface {
         )
 
         initViews()
+        getAllSavedList()
 
         return binding.root
     }
@@ -68,8 +69,8 @@ class SavedFragment : Fragment(), Interface {
     override fun onResume() {
         super.onResume()
 
-//        getAllSavedList()
-        showSavedList()
+        getAllSavedList()
+//        showSavedList()
 
         val isSwitched: Boolean = savedListAdapter.getItemViewType()
         (activity as? ViewTypeInterface)?.setGridDrawableRes(isSwitched)
@@ -121,6 +122,10 @@ class SavedFragment : Fragment(), Interface {
     }
 
     override fun saveButtonClick() {
+        TODO("Not yet implemented")
+    }
+
+    override fun selectButtonClick(selectionCheck: Boolean) {
         TODO("Not yet implemented")
     }
 }

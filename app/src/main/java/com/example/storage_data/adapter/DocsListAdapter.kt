@@ -3,6 +3,8 @@ package com.example.storage_data.adapter
 import android.app.Activity
 import android.app.Dialog
 import android.content.ContentUris
+import android.content.Context
+import android.content.SharedPreferences
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -111,19 +113,22 @@ class DocsListAdapter(
         val check = checkList?.get(position)?.selected
         val value = checkList?.get(position)?.item
 
+        val sharedPreferences: SharedPreferences? =
+            context.context?.getSharedPreferences(
+                "kotlinsharedpreference",
+                Context.MODE_PRIVATE
+            )
+        val editor: SharedPreferences.Editor? = sharedPreferences?.edit()
+
+
         if (check == true) {
-            if (value != null) {
-                MySingelton.removeSelectedDocs(value)
-            }
 
             checkList?.removeAt(position)
             checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
 
             holder.clMain.setBackgroundResource(android.R.color.transparent)
         } else {
-            if (value != null) {
-                MySingelton.setSelectedDocs(value)
-            }
+
             checkList?.removeAt(position)
             checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
 
@@ -133,11 +138,19 @@ class DocsListAdapter(
             val check = checkList!![i].selected
 
             if (check) {
+                editor?.putBoolean("long_press_docs", true)
+                editor?.putBoolean("long_press_videos", false)
+                editor?.putBoolean("long_press_images", false)
+
+                editor?.apply()
+
                 isLongPress = true
 
                 (context.context as? ViewTypeInterface)?.setSaveCheckRes(true)
                 break
             } else {
+                editor?.putBoolean("long_press_docs", false)
+
                 isLongPress = false
 
                 (context.context as? ViewTypeInterface)?.setSaveCheckRes(false)

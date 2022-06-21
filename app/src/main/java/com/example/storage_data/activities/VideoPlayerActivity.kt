@@ -9,10 +9,11 @@ import androidx.databinding.DataBindingUtil
 import com.example.storage_data.R
 import com.example.storage_data.databinding.ActivityVideoPlayerBinding
 import com.example.storage_data.model.MyModel
+import com.example.storage_data.utils.MySingelton
 
 class VideoPlayerActivity : AppCompatActivity() {
 
-    private lateinit var binding:ActivityVideoPlayerBinding
+    private lateinit var binding: ActivityVideoPlayerBinding
     lateinit var videoView: VideoView
     lateinit var titleView: TextView
 
@@ -31,7 +32,7 @@ class VideoPlayerActivity : AppCompatActivity() {
     }
 
     private fun getSetData() {
-        val videoData = intent?.getParcelableExtra<MyModel>("video_data")
+        val videoData = MySingelton.getVideoData()
         titleView.text = videoData?.title
 
         val mediaController = MediaController(this)

@@ -24,8 +24,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.example.storage_data.R
 import com.example.storage_data.databinding.ActivityMainBinding
-import com.example.storage_data.utils.Interface
-import com.example.storage_data.utils.SelectInterface
+import com.example.storage_data.utils.SelectionInterface
 import com.example.storage_data.utils.ViewTypeInterface
 import com.example.storage_data.view.DocsFragment
 import com.example.storage_data.view.ImagesFragment
@@ -87,7 +86,7 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
 
         gridChange.setOnClickListener() {
             currentFragment = listFragments[viewPager.currentItem] as Fragment
-            (currentFragment as Interface).gridButtonClick()
+            (currentFragment as SelectionInterface).gridButtonClick()
         }
         selectAll.setOnClickListener() {
             if (!selectionCheck) {
@@ -95,19 +94,19 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
                 selectAll.setImageResource(R.drawable.ic_baseline_unselect_all)
 
                 currentFragment = listFragments[viewPager.currentItem] as Fragment
-                (currentFragment as SelectInterface).selectButtonClick(selectionCheck)
+                (currentFragment as SelectionInterface).selectButtonClick(selectionCheck)
             } else {
                 selectionCheck = false
                 selectAll.setImageResource(R.drawable.ic_baseline_select_all)
 
                 currentFragment = listFragments[viewPager.currentItem] as Fragment
-                (currentFragment as SelectInterface).selectButtonClick(selectionCheck)
+                (currentFragment as SelectionInterface).selectButtonClick(selectionCheck)
             }
         }
 
         save.setOnClickListener() {
             currentFragment = listFragments[viewPager.currentItem] as Fragment
-            (currentFragment as Interface).saveButtonClick()
+            (currentFragment as SelectionInterface).saveButtonClick()
         }
     }
 

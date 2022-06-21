@@ -1,18 +1,14 @@
 package com.example.storage_data.view
 
-import android.app.AlertDialog
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Color
+import android.app.Dialog
+import android.content.Context
+import android.content.SharedPreferences
 import android.media.MediaScannerConnection
-import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
 import android.view.*
-import android.widget.LinearLayout
 import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
@@ -30,10 +26,11 @@ import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.*
 
 
-class ImagesFragment : Fragment(), Interface, SelectInterface {
+class ImagesFragment : Fragment(), SelectionInterface {
 
     private lateinit var viewModal: ViewModel
     private lateinit var recyclerView: RecyclerView
@@ -42,7 +39,8 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
     private lateinit var binding: FragmentImagesBinding
     private var imagesArray: ArrayList<MyModel>? = ArrayList()
     private var arrayCheck: ArrayList<SelectedModel>? = ArrayList()
-    private lateinit var dialog: AlertDialog
+    private var dialog: Dialog? = null
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -62,6 +60,11 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
     }
 
     private fun initViews() {
+        sharedPreferences =
+            context?.getSharedPreferences(
+                "kotlinsharedpreference",
+                Context.MODE_PRIVATE
+            )!!
 
         recyclerView = binding.recyclerView
         progressBar = binding.progressBar
@@ -74,6 +77,7 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
         imagesListAdapter = ImagesListAdapter(this)
         recyclerView.adapter = imagesListAdapter
 
+        dialog = context?.let { SavingDialog.progressDialog(it) }
     }
 
     override fun onResume() {
@@ -84,6 +88,13 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
 
         val isSelected: Boolean = imagesListAdapter.getSelectedItemsCheck()
         (activity as? ViewTypeInterface)?.setSaveCheckRes(isSelected)
+
+        val sharedVideos = sharedPreferences.getBoolean("long_press_videos", false)
+        val sharedDocs = sharedPreferences.getBoolean("long_press_docs", false)
+
+        if (sharedVideos || sharedDocs) {
+            unSelectAllItems()
+        }
     }
 
     private fun getAllItemsList() {
@@ -99,63 +110,97 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
             progressBar.visibility = View.GONE
             imagesListAdapter.setListItems(imagesArray!!)
 
-            clearAllSelection()
+            unSelectAllItems()
         }
         viewModal.loadImages()
     }
 
-    private fun clearAllSelection() {
-        arrayCheck?.clear()
-        for (item in imagesArray!!) {
-            arrayCheck?.add(SelectedModel(false, item))
-        }
-        imagesListAdapter.checkSelectedItems(arrayCheck!!)
+    override fun gridButtonClick() {
+        val isSwitched: Boolean = imagesListAdapter.toggleItemViewType()
+        recyclerView.layoutManager =
+            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
+                context,
+                3
+            )
+        val getSwitchCheck: Boolean = imagesListAdapter.getItemViewType()
+        (activity as? ViewTypeInterface)?.setGridDrawableRes(getSwitchCheck)
     }
 
-    private fun getThumbnail(uri: Uri?): Bitmap? {
-        var input: InputStream? = uri?.let { context?.contentResolver?.openInputStream(it) }
-        val onlyBoundsOptions = BitmapFactory.Options()
-        onlyBoundsOptions.inJustDecodeBounds = true
-        onlyBoundsOptions.inPreferredConfig = Bitmap.Config.ARGB_8888 //optional
-        BitmapFactory.decodeStream(input, null, onlyBoundsOptions)
-        input?.close()
-        if (onlyBoundsOptions.outWidth == -1 || onlyBoundsOptions.outHeight == -1) {
-            return null
+    override fun saveButtonClick() {
+
+        var newArray: ArrayList<MyModel>? = ArrayList()
+
+        for (item in arrayCheck!!) {
+            if (item.selected) {
+                newArray?.add(item.item)
+            }
         }
-        val bitmapOptions = BitmapFactory.Options()
-        bitmapOptions.inPreferredConfig = Bitmap.Config.ARGB_8888 //
-        input = uri?.let { context?.contentResolver?.openInputStream(it) }
-        val bitmap = BitmapFactory.decodeStream(input, null, bitmapOptions)
-        input?.close()
-        return bitmap
+        if (newArray != null) {
+
+            dialog?.show()
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    saveImages(newArray)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            unSelectAllItems()
+        }
     }
 
-    private fun saveImage(data: Bitmap) {
-        val newName = "IMG_${System.currentTimeMillis()}.jpg"
-        CoroutineScope(Dispatchers.IO).launch {
-            val createFolder =
-                File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
-            if (!createFolder.exists()) createFolder.mkdir()
-            val saveImage = File(createFolder, newName)
-            try {
-                val outputStream: OutputStream = FileOutputStream(saveImage)
-                data.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-                outputStream.flush()
-                outputStream.close()
+    private suspend fun saveImages(
+        list: ArrayList<MyModel>,
+    ) {
+        withContext(Dispatchers.IO) {
+            list.forEachIndexed { index, imageModel ->
 
+                val sourceFile = File(imageModel.path!!)
+
+                val directory =
+                    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
+
+                val dFiles = File(
+                    directory,
+                    sourceFile.name
+                )
+                if (!directory.exists()) {
+                    directory.mkdirs()
+                }
+
+                try {
+                    if (sourceFile.exists()) {
+
+                        copySelectedImages(sourceFile, dFiles)
+
+                    }
+                } catch (e: Exception) {
+                    Log.e("TAG", "onSavedItem:Not Saved ")
+                }
+                if (index == list.size - 1) {
+                    dialog?.dismiss()
+                }
+            }
+        }
+    }
+
+    private fun copySelectedImages(src: File, dest: File) {
+        FileInputStream(src).use { fis ->
+            FileOutputStream(dest).use { os ->
+                val buffer = ByteArray(1024)
+                var len: Int
+                while (fis.read(buffer).also { len = it } != -1) {
+                    os.write(buffer, 0, len)
+                }
                 MediaScannerConnection.scanFile(
-                    context, arrayOf(saveImage.absolutePath), null
+                    context, arrayOf(dest.absolutePath), null
                 ) { path, uri ->
                     Log.i("ExternalStorage", "Scanned $path:")
                     Log.i("ExternalStorage", "-> uri=$uri")
                 }
-            } catch (e: FileNotFoundException) {
-                e.printStackTrace()
-            } catch (e: IOException) {
-                e.printStackTrace()
             }
         }
-//        Toast.makeText(context, "$newName saved.", Toast.LENGTH_SHORT).show()
     }
 
     private fun saveImagesFile(pos: Int, filePath: String?) {
@@ -165,15 +210,15 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
             try {
                 val currentFile = filePath?.let { File(it) }
 
-                val wallpaperDirectory =
+                val directory =
                     File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
 
                 val newFile = File(
-                    wallpaperDirectory,
+                    directory,
                     newName
                 )
-                if (!wallpaperDirectory.exists()) {
-                    wallpaperDirectory.mkdirs()
+                if (!directory.exists()) {
+                    directory.mkdirs()
                 }
                 if (currentFile != null) {
                     if (currentFile.exists()) {
@@ -206,105 +251,6 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
                 e.printStackTrace()
             }
         }
-//        Toast.makeText(context, "$newName saved.", Toast.LENGTH_SHORT).show()
-    }
-
-    fun setProgressDialog() {
-
-        // Creating a Linear Layout
-        val llPadding = 30
-        val linearLayout = LinearLayout(context)
-        linearLayout.orientation = LinearLayout.HORIZONTAL
-        linearLayout.setPadding(llPadding, llPadding, llPadding, llPadding)
-        linearLayout.gravity = Gravity.CENTER
-        var llParam = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        )
-        llParam.gravity = Gravity.CENTER
-        linearLayout.layoutParams = llParam
-
-        // Creating a ProgressBar inside the layout
-        val progressBar = ProgressBar(context)
-        progressBar.isIndeterminate = true
-        progressBar.setPadding(0, 0, llPadding, 0)
-        progressBar.layoutParams = llParam
-        llParam = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        llParam.gravity = Gravity.CENTER
-
-        // Creating a TextView inside the layout
-        val tvText = TextView(context)
-        tvText.text = "Saving files ..."
-        tvText.setTextColor(Color.parseColor("#000000"))
-        tvText.textSize = 20f
-        tvText.layoutParams = llParam
-        linearLayout.addView(progressBar)
-        linearLayout.addView(tvText)
-
-        // Setting the AlertDialog Builder view
-        // as the Linear layout created above
-        val builder: AlertDialog.Builder = AlertDialog.Builder(context)
-        builder.setCancelable(true)
-        builder.setView(linearLayout)
-
-        // Displaying the dialog
-        dialog = builder.create()
-        dialog.show()
-
-        val window: Window? = dialog.window
-        if (window != null) {
-            val layoutParams = WindowManager.LayoutParams()
-            layoutParams.copyFrom(dialog.window?.attributes)
-            layoutParams.width = LinearLayout.LayoutParams.WRAP_CONTENT
-            layoutParams.height = LinearLayout.LayoutParams.WRAP_CONTENT
-            dialog.window?.attributes = layoutParams
-
-            // Disabling screen touch to avoid exiting the Dialog
-            window.setFlags(
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-            )
-        }
-    }
-
-    override fun gridButtonClick() {
-        val isSwitched: Boolean = imagesListAdapter.toggleItemViewType()
-        recyclerView.layoutManager =
-            if (isSwitched) LinearLayoutManager(context) else GridLayoutManager(
-                context,
-                3
-            )
-        val getSwitchCheck: Boolean = imagesListAdapter.getItemViewType()
-        (activity as? ViewTypeInterface)?.setGridDrawableRes(getSwitchCheck)
-    }
-
-    override fun saveButtonClick() {
-
-        var newArray: ArrayList<MyModel>? = ArrayList()
-
-        for (item in arrayCheck!!) {
-            if (item.selected) {
-                newArray?.add(item.item)
-            }
-        }
-        if (newArray != null) {
-
-//            setProgressDialog()
-
-            for (i in 0 until newArray.size) {
-//                val bitmap: Bitmap = getThumbnail(newArray[i].artUri)!!
-//
-//                saveImage(bitmap)
-//
-                saveImagesFile(i, newArray[i].path)
-            }
-
-            Toast.makeText(context, "Selected files saved.", Toast.LENGTH_SHORT).show()
-            unSelectAllItems()
-        }
     }
 
     override fun selectButtonClick(selectionCheck: Boolean) {
@@ -326,9 +272,12 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
 
         (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
 
-        for (item in imagesArray!!) {
-            MySingelton.setSelectedImages(item)
-        }
+        val editor: SharedPreferences.Editor? = sharedPreferences.edit()
+        editor?.putBoolean("long_press_images", true)
+        editor?.putBoolean("long_press_videos", false)
+        editor?.putBoolean("long_press_docs", false)
+        editor?.apply()
+
     }
 
     private fun unSelectAllItems() {
@@ -340,9 +289,5 @@ class ImagesFragment : Fragment(), Interface, SelectInterface {
         imagesListAdapter.checkSelectedItems(arrayCheck!!)
 
         (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
-
-        for (item in imagesArray!!) {
-            MySingelton.removeSelectedImages(item)
-        }
     }
 }

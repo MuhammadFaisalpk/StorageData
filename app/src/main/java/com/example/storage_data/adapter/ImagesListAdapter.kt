@@ -3,7 +3,9 @@ package com.example.storage_data.adapter
 import android.app.Activity
 import android.app.Dialog
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -122,18 +124,12 @@ class ImagesListAdapter(
         val value = checkList?.get(position)?.item
 
         if (check == true) {
-            if (value != null) {
-                MySingelton.removeSelectedImages(value)
-            }
 
             checkList?.removeAt(position)
             checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
 
             holder.clMain.setBackgroundResource(android.R.color.transparent)
         } else {
-            if (value != null) {
-                MySingelton.setSelectedImages(value)
-            }
 
             checkList?.removeAt(position)
             checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
@@ -144,11 +140,28 @@ class ImagesListAdapter(
         for (i in 0 until checkList?.size!!) {
             val check = checkList!![i].selected
 
+            val sharedPreferences: SharedPreferences? =
+                context.context?.getSharedPreferences(
+                    "kotlinsharedpreference",
+                    Context.MODE_PRIVATE
+                )
+            val editor: SharedPreferences.Editor? = sharedPreferences?.edit()
+
             if (check) {
+
+                editor?.putBoolean("long_press_images", true)
+                editor?.putBoolean("long_press_videos", false)
+                editor?.putBoolean("long_press_docs", false)
+
+                editor?.apply()
+
                 isLongPress = true
                 (context.context as? ViewTypeInterface)?.setSaveCheckRes(true)
                 break
             } else {
+                editor?.putBoolean("long_press_images", false)
+                editor?.apply()
+
                 isLongPress = false
                 (context.context as? ViewTypeInterface)?.setSaveCheckRes(false)
             }

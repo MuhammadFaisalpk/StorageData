@@ -1,5 +1,8 @@
 package com.example.storage_data.view
 
+import android.app.Dialog
+import android.content.Context
+import android.content.SharedPreferences
 import android.media.MediaScannerConnection
 import android.os.Bundle
 import android.os.Environment
@@ -25,10 +28,11 @@ import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.*
 
 
-class DocsFragment : Fragment(), Interface, SelectInterface {
+class DocsFragment : Fragment(), SelectionInterface {
 
     private lateinit var viewModal: ViewModel
     lateinit var docsListAdapter: DocsListAdapter
@@ -37,6 +41,8 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
     private lateinit var progressBar: ProgressBar
     private lateinit var docsArray: ArrayList<MyModel>
     private var arrayCheck: ArrayList<SelectedModel>? = ArrayList()
+    private var dialog: Dialog? = null
+    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -56,6 +62,11 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
     }
 
     private fun initViews() {
+        sharedPreferences =
+            context?.getSharedPreferences(
+                "kotlinsharedpreference",
+                Context.MODE_PRIVATE
+            )!!
 
         recyclerView = binding.recyclerView
         progressBar = binding.progressBar
@@ -66,6 +77,8 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
         )
         docsListAdapter = DocsListAdapter(this)
         recyclerView.adapter = docsListAdapter
+
+        dialog = context?.let { SavingDialog.progressDialog(it) }
     }
 
     override fun onResume() {
@@ -76,6 +89,13 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
 
         val isSelected: Boolean = docsListAdapter.getSelectedItemsCheck()
         (activity as? ViewTypeInterface)?.setSaveCheckRes(isSelected)
+
+        val sharedImages = sharedPreferences.getBoolean("long_press_images", false)
+        val sharedVideos = sharedPreferences.getBoolean("long_press_videos", false)
+
+        if (sharedImages || sharedVideos) {
+            unSelectAllItems()
+        }
     }
 
     private fun getAllItemsList() {
@@ -91,17 +111,9 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
             progressBar.visibility = View.GONE
             docsListAdapter.setListItems(docsArray)
 
-            clearAllSelection()
+            unSelectAllItems()
         }
         viewModal.loadDocs()
-    }
-
-    private fun clearAllSelection() {
-        arrayCheck?.clear()
-        for (item in docsArray) {
-            arrayCheck?.add(SelectedModel(false, item))
-        }
-        docsListAdapter.checkSelectedItems(arrayCheck!!)
     }
 
     override fun gridButtonClick() {
@@ -124,13 +136,71 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
             }
         }
         if (newArray != null) {
-            for (i in 0 until newArray.size) {
-                saveDocumentFile(i, newArray[0].artUri?.path)
+
+            dialog?.show()
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    saveDocs(newArray)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            unSelectAllItems()
+        }
+    }
+
+    private suspend fun saveDocs(
+        list: ArrayList<MyModel>,
+    ) {
+        withContext(Dispatchers.IO) {
+            list.forEachIndexed { index, imageModel ->
+
+                val sourceFile = File(imageModel.path!!)
+
+                val directory =
+                    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
+
+                val dFiles = File(
+                    directory,
+                    sourceFile.name
+                )
+                if (!directory.exists()) {
+                    directory.mkdirs()
+                }
+
+                try {
+                    if (sourceFile.exists()) {
+
+                        copySelectedImages(sourceFile, dFiles)
+
+                    }
+                } catch (e: Exception) {
+                    Log.e("TAG", "onSavedItem:Not Saved ")
+                }
+                if (index == list.size - 1) {
+                    dialog?.dismiss()
+                }
             }
         }
-        Toast.makeText(context, "Selected files saved.", Toast.LENGTH_SHORT).show()
-        unSelectAllItems()
+    }
 
+    private fun copySelectedImages(src: File, dest: File) {
+        FileInputStream(src).use { fis ->
+            FileOutputStream(dest).use { os ->
+                val buffer = ByteArray(1024)
+                var len: Int
+                while (fis.read(buffer).also { len = it } != -1) {
+                    os.write(buffer, 0, len)
+                }
+                MediaScannerConnection.scanFile(
+                    context, arrayOf(dest.absolutePath), null
+                ) { path, uri ->
+                    Log.i("ExternalStorage", "Scanned $path:")
+                    Log.i("ExternalStorage", "-> uri=$uri")
+                }
+            }
+        }
     }
 
     private fun saveDocumentFile(pos: Int, filePath: String?) {
@@ -181,7 +251,6 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
                 e.printStackTrace()
             }
         }
-//        Toast.makeText(context, "$newName saved.", Toast.LENGTH_SHORT).show()
     }
 
     override fun selectButtonClick(selectionCheck: Boolean) {
@@ -203,9 +272,11 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
 
         (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
 
-        for (item in docsArray!!) {
-            MySingelton.setSelectedDocs(item)
-        }
+        val editor: SharedPreferences.Editor? = sharedPreferences.edit()
+        editor?.putBoolean("long_press_images", false)
+        editor?.putBoolean("long_press_videos", false)
+        editor?.putBoolean("long_press_docs", true)
+        editor?.apply()
     }
 
     private fun unSelectAllItems() {
@@ -217,9 +288,5 @@ class DocsFragment : Fragment(), Interface, SelectInterface {
         docsListAdapter.checkSelectedItems(arrayCheck!!)
 
         (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
-
-        for (item in docsArray!!) {
-            MySingelton.removeSelectedDocs(item)
-        }
     }
 }
