@@ -2,6 +2,7 @@ package com.example.storage_data.activities
 
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -13,6 +14,8 @@ import android.provider.Settings
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -24,8 +27,8 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.example.storage_data.R
 import com.example.storage_data.databinding.ActivityMainBinding
-import com.example.storage_data.utils.SelectionInterface
-import com.example.storage_data.utils.ViewTypeInterface
+import com.example.storage_data.interfaces.SelectionInterface
+import com.example.storage_data.interfaces.ViewTypeInterface
 import com.example.storage_data.view.DocsFragment
 import com.example.storage_data.view.ImagesFragment
 import com.example.storage_data.view.SavedFragment
@@ -85,28 +88,24 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         save = binding.save
 
         gridChange.setOnClickListener() {
-            currentFragment = listFragments[viewPager.currentItem] as Fragment
             (currentFragment as SelectionInterface).gridButtonClick()
         }
+        save.setOnClickListener() {
+            (currentFragment as SelectionInterface).saveButtonClick()
+        }
+
         selectAll.setOnClickListener() {
             if (!selectionCheck) {
                 selectionCheck = true
                 selectAll.setImageResource(R.drawable.ic_baseline_unselect_all)
 
-                currentFragment = listFragments[viewPager.currentItem] as Fragment
-                (currentFragment as SelectionInterface).selectButtonClick(selectionCheck)
+                (currentFragment as SelectionInterface).selectAllButtonClick(selectionCheck)
             } else {
                 selectionCheck = false
                 selectAll.setImageResource(R.drawable.ic_baseline_select_all)
 
-                currentFragment = listFragments[viewPager.currentItem] as Fragment
-                (currentFragment as SelectionInterface).selectButtonClick(selectionCheck)
+                (currentFragment as SelectionInterface).selectAllButtonClick(selectionCheck)
             }
-        }
-
-        save.setOnClickListener() {
-            currentFragment = listFragments[viewPager.currentItem] as Fragment
-            (currentFragment as SelectionInterface).saveButtonClick()
         }
     }
 
@@ -126,7 +125,7 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
     private fun requestPermission() {
         if (SDK_INT >= Build.VERSION_CODES.R) {
             val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-            intent.data = Uri.parse("package:$packageName");
+            intent.data = Uri.parse("package:$packageName")
 
             startActivityForResult(intent, 2296)
         } else {
@@ -148,6 +147,7 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         }
         viewPager.adapter = adapter
         viewPager.currentItem = 0
+        currentFragment = listFragments[viewPager.currentItem] as Fragment
 
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
             tab.text = adapter.getTabTitle(position)
@@ -158,6 +158,7 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 viewPager.currentItem = tab.position;
+                currentFragment = listFragments[viewPager.currentItem] as Fragment
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab) {
@@ -226,12 +227,12 @@ class MainActivity : AppCompatActivity(), ViewTypeInterface {
         } else if (resultCode == RESULT_OK) {
             when (requestCode) {
                 123, 124 -> {
-                    val fragment = getVisibleFragment() as VideosFragment
-                    fragment.videosListAdapter.onResult(requestCode)
-                }
-                125, 126 -> {
                     val fragment = getVisibleFragment() as ImagesFragment
                     fragment.imagesListAdapter.onResult(requestCode)
+                }
+                125, 126 -> {
+                    val fragment = getVisibleFragment() as VideosFragment
+                    fragment.videosListAdapter.onResult(requestCode)
                 }
                 127, 128 -> {
                     val fragment = getVisibleFragment() as DocsFragment

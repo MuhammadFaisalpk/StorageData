@@ -1,4 +1,4 @@
-package com.example.storage_data.utils
+package com.example.storage_data.interfaces
 
 interface ViewTypeInterface {
     fun setGridDrawableRes(enabled: Boolean)

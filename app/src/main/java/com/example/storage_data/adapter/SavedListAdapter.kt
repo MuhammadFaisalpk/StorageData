@@ -26,7 +26,6 @@ class SavedListAdapter(
     RecyclerView.Adapter<SavedListAdapter.ViewHolder>() {
 
     var items: ArrayList<SavedModel>? = null
-    private var checkList: ArrayList<SelectedModel>? = ArrayList()
     var newItem: SavedModel? = null
     private var newPosition = 0
     private val listItem = 0

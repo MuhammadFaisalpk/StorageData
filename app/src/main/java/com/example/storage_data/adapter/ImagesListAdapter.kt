@@ -3,9 +3,7 @@ package com.example.storage_data.adapter
 import android.app.Activity
 import android.app.Dialog
 import android.content.ContentValues
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -22,12 +20,15 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.storage_data.R
 import com.example.storage_data.activities.ImageSliderActivity
+import com.example.storage_data.interfaces.ViewTypeInterface
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
-import com.example.storage_data.utils.MySingelton
-import com.example.storage_data.utils.ViewTypeInterface
+import com.example.storage_data.utils.MySingleton
+import com.example.storage_data.utils.SharedPrefs
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.gson.Gson
 import java.io.File
+
 
 class ImagesListAdapter(
     private val context: Fragment
@@ -112,8 +113,8 @@ class ImagesListAdapter(
     }
 
     private fun singlePressCheck(position: Int, it: View) {
-        MySingelton.setImagesData(items)
-        MySingelton.setImagePosition(position)
+        MySingleton.setImagesData(items)
+        MySingleton.setImagePosition(position)
 
         val intent = Intent(it.context, ImageSliderActivity::class.java)
         it.context.startActivity(intent)
@@ -123,44 +124,35 @@ class ImagesListAdapter(
         val check = checkList?.get(position)?.selected
         val value = checkList?.get(position)?.item
 
+        val prefs = context.context?.let { SharedPrefs.SharedPreferences(it) }
+
         if (check == true) {
 
-            checkList?.removeAt(position)
-            checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
+            value?.let { SelectedModel(false, it) }?.let { checkList?.set(position, it) }
 
             holder.clMain.setBackgroundResource(android.R.color.transparent)
         } else {
 
-            checkList?.removeAt(position)
-            checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
+            value?.let { SelectedModel(true, it) }?.let { checkList?.set(position, it) }
 
             holder.clMain.setBackgroundResource(R.color.purple_200)
         }
 
         for (i in 0 until checkList?.size!!) {
-            val check = checkList!![i].selected
 
-            val sharedPreferences: SharedPreferences? =
-                context.context?.getSharedPreferences(
-                    "kotlinsharedpreference",
-                    Context.MODE_PRIVATE
-                )
-            val editor: SharedPreferences.Editor? = sharedPreferences?.edit()
+            if (checkList!![i].selected) {
 
-            if (check) {
-
-                editor?.putBoolean("long_press_images", true)
-                editor?.putBoolean("long_press_videos", false)
-                editor?.putBoolean("long_press_docs", false)
-
-                editor?.apply()
+                if (prefs != null) {
+                    SharedPrefs.setImagesPrefs(prefs, true)
+                }
 
                 isLongPress = true
                 (context.context as? ViewTypeInterface)?.setSaveCheckRes(true)
                 break
             } else {
-                editor?.putBoolean("long_press_images", false)
-                editor?.apply()
+                if (prefs != null) {
+                    SharedPrefs.setImagesPrefs(prefs, false)
+                }
 
                 isLongPress = false
                 (context.context as? ViewTypeInterface)?.setSaveCheckRes(false)
@@ -217,8 +209,8 @@ class ImagesListAdapter(
 
     fun onResult(requestCode: Int) {
         when (requestCode) {
-            125 -> afterDeletePermission(newPosition)
-            126 -> afterRenamePermission(newPosition)
+            123 -> afterDeletePermission(newPosition)
+            124 -> afterRenamePermission(newPosition)
         }
     }
 
@@ -254,18 +246,18 @@ class ImagesListAdapter(
                         )
 
                     (context.context as Activity).startIntentSenderForResult(
-                        pi.intentSender, 126,
+                        pi.intentSender, 124,
                         null, 0, 0, 0, null
                     )
                 } else {
                     val currentFile = items?.get(position)?.path?.let { it1 -> File(it1) }
                     if (currentFile != null) {
-                        if (currentFile.exists() && newName.toString()
+                        if (currentFile.exists() && newName
                                 .isNotEmpty()
                         ) {
                             val newFile = File(
                                 currentFile.parentFile,
-                                newName.toString() + "." + currentFile.extension
+                                newName + "." + currentFile.extension
                             )
                             if (currentFile.renameTo(newFile)) {
                                 MediaScannerConnection.scanFile(
@@ -381,7 +373,7 @@ class ImagesListAdapter(
                 )
             if (v != null) {
                 (v.context as Activity).startIntentSenderForResult(
-                    pi.intentSender, 125,
+                    pi.intentSender, 123,
                     null, 0, 0, 0, null
                 )
             }
@@ -415,6 +407,7 @@ class ImagesListAdapter(
 
     private fun afterDeletePermission(position: Int) {
         items?.removeAt(position)
+        checkList?.removeAt(position)
         notifyDataSetChanged()
     }
 

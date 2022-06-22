@@ -31,6 +31,11 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
         MutableLiveData<List<SavedModel>>()
     }
 
+    fun getImages(): LiveData<List<MyModel>> = images
+    fun getVideos(): LiveData<List<MyModel>> = videos
+    fun getDocs(): LiveData<List<MyModel>> = documents
+    fun getSaved(): LiveData<List<SavedModel>> = saved
+
     fun loadImages() {
         viewModelScope.launch() {
             doLoadImages()
@@ -86,9 +91,4 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             saved.postValue(allSaved)
         }
     }
-
-    fun getImages(): LiveData<List<MyModel>> = images
-    fun getVideos(): LiveData<List<MyModel>> = videos
-    fun getDocs(): LiveData<List<MyModel>> = documents
-    fun getSaved(): LiveData<List<SavedModel>> = saved
 }

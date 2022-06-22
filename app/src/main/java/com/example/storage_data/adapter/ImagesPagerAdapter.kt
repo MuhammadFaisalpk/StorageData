@@ -19,7 +19,6 @@ class ImagesPagerAdapter(
 ) :
     RecyclerView.Adapter<ImagesPagerAdapter.ViewHolder>() {
     // Array of images
-    // Adding images from drawable folder
 
     // This method returns our layout
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

@@ -9,7 +9,7 @@ class SavingDialog {
     companion object {
         fun progressDialog(context: Context): Dialog {
             val dialog = Dialog(context)
-            val inflate = LayoutInflater.from(context).inflate(R.layout.progress, null)
+            val inflate = LayoutInflater.from(context).inflate(R.layout.progress_dialog, null)
             dialog.setContentView(inflate)
             dialog.setCancelable(false)
 

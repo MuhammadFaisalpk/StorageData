@@ -19,6 +19,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
 import com.example.storage_data.adapter.ImagesListAdapter
 import com.example.storage_data.databinding.FragmentImagesBinding
+import com.example.storage_data.interfaces.SelectionInterface
+import com.example.storage_data.interfaces.ViewTypeInterface
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
 import com.example.storage_data.utils.*
@@ -60,11 +62,7 @@ class ImagesFragment : Fragment(), SelectionInterface {
     }
 
     private fun initViews() {
-        sharedPreferences =
-            context?.getSharedPreferences(
-                "kotlinsharedpreference",
-                Context.MODE_PRIVATE
-            )!!
+        sharedPreferences = context?.let { SharedPrefs.SharedPreferences(it) }!!
 
         recyclerView = binding.recyclerView
         progressBar = binding.progressBar
@@ -89,11 +87,14 @@ class ImagesFragment : Fragment(), SelectionInterface {
         val isSelected: Boolean = imagesListAdapter.getSelectedItemsCheck()
         (activity as? ViewTypeInterface)?.setSaveCheckRes(isSelected)
 
-        val sharedVideos = sharedPreferences.getBoolean("long_press_videos", false)
-        val sharedDocs = sharedPreferences.getBoolean("long_press_docs", false)
+        val prefs = context?.let { SharedPrefs.SharedPreferences(it) }
+        if (prefs != null) {
+            val sharedVideos = SharedPrefs.getVideosPrefs(prefs)
+            val sharedDocs = SharedPrefs.getDocsPrefs(prefs)
 
-        if (sharedVideos || sharedDocs) {
-            unSelectAllItems()
+            if (sharedVideos || sharedDocs) {
+                unSelectAllItems()
+            }
         }
     }
 
@@ -128,17 +129,15 @@ class ImagesFragment : Fragment(), SelectionInterface {
 
     override fun saveButtonClick() {
 
-        var newArray: ArrayList<MyModel>? = ArrayList()
+        val newArray: ArrayList<MyModel>? = ArrayList()
 
         for (item in arrayCheck!!) {
             if (item.selected) {
                 newArray?.add(item.item)
             }
         }
+
         if (newArray != null) {
-
-            dialog?.show()
-
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     saveImages(newArray)
@@ -146,7 +145,6 @@ class ImagesFragment : Fragment(), SelectionInterface {
                     e.printStackTrace()
                 }
             }
-            unSelectAllItems()
         }
     }
 
@@ -154,6 +152,9 @@ class ImagesFragment : Fragment(), SelectionInterface {
         list: ArrayList<MyModel>,
     ) {
         withContext(Dispatchers.IO) {
+            withContext(Dispatchers.Main) {
+                dialog?.show()
+            }
             list.forEachIndexed { index, imageModel ->
 
                 val sourceFile = File(imageModel.path!!)
@@ -161,26 +162,31 @@ class ImagesFragment : Fragment(), SelectionInterface {
                 val directory =
                     File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
 
-                val dFiles = File(
-                    directory,
-                    sourceFile.name
-                )
                 if (!directory.exists()) {
                     directory.mkdirs()
                 }
 
+                val dFiles = File(
+                    directory,
+                    sourceFile.name
+                )
+
                 try {
-                    if (sourceFile.exists()) {
-
-                        copySelectedImages(sourceFile, dFiles)
-
+                    if (!dFiles.exists()) {
+                        dFiles.createNewFile()
+                        if (sourceFile.exists()) {
+                            copySelectedImages(sourceFile, dFiles)
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e("TAG", "onSavedItem:Not Saved ")
                 }
-                if (index == list.size - 1) {
-                    dialog?.dismiss()
-                }
+            }
+            withContext(Dispatchers.Main) {
+                dialog?.dismiss()
+                unSelectAllItems()
+
+                Toast.makeText(context, "Selected files saved.", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -203,57 +209,7 @@ class ImagesFragment : Fragment(), SelectionInterface {
         }
     }
 
-    private fun saveImagesFile(pos: Int, filePath: String?) {
-        val newName = "IMG_${System.currentTimeMillis() + pos}.jpg"
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val currentFile = filePath?.let { File(it) }
-
-                val directory =
-                    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
-
-                val newFile = File(
-                    directory,
-                    newName
-                )
-                if (!directory.exists()) {
-                    directory.mkdirs()
-                }
-                if (currentFile != null) {
-                    if (currentFile.exists()) {
-                        val `in`: InputStream = FileInputStream(currentFile)
-                        val out: OutputStream = FileOutputStream(newFile)
-
-                        // Copy the bits from instream to outstream
-                        val buf = ByteArray(1024)
-                        var len: Int
-                        while (`in`.read(buf).also { len = it } > 0) {
-                            out.write(buf, 0, len)
-                        }
-                        `in`.close()
-                        out.close()
-
-                        MediaScannerConnection.scanFile(
-                            context, arrayOf(newFile.absolutePath), null
-                        ) { path, uri ->
-                            Log.i("ExternalStorage", "Scanned $path:")
-                            Log.i("ExternalStorage", "-> uri=$uri")
-                        }
-
-                        Log.i("ExternalStorage", "Video Saved.")
-
-                    } else {
-                        Log.i("ExternalStorage", "Video saving failed.")
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    override fun selectButtonClick(selectionCheck: Boolean) {
+    override fun selectAllButtonClick(selectionCheck: Boolean) {
         if (selectionCheck) {
             selectAllItems()
         } else {
@@ -272,11 +228,7 @@ class ImagesFragment : Fragment(), SelectionInterface {
 
         (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
 
-        val editor: SharedPreferences.Editor? = sharedPreferences.edit()
-        editor?.putBoolean("long_press_images", true)
-        editor?.putBoolean("long_press_videos", false)
-        editor?.putBoolean("long_press_docs", false)
-        editor?.apply()
+        SharedPrefs.setImagesPrefs(sharedPreferences, true)
 
     }
 
@@ -289,5 +241,9 @@ class ImagesFragment : Fragment(), SelectionInterface {
         imagesListAdapter.checkSelectedItems(arrayCheck!!)
 
         (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
+
+        SharedPrefs.setImagesPrefs(sharedPreferences, false)
+
     }
+
 }

@@ -1,6 +1,7 @@
 package com.example.storage_data.activities
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
@@ -9,7 +10,11 @@ import com.example.storage_data.R
 import com.example.storage_data.adapter.ImagesPagerAdapter
 import com.example.storage_data.databinding.ActivityImageSliderBinding
 import com.example.storage_data.model.MyModel
-import com.example.storage_data.utils.MySingelton
+import com.example.storage_data.utils.MySingleton
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.lang.reflect.Type
+
 
 class ImageSliderActivity : AppCompatActivity() {
 
@@ -40,8 +45,8 @@ class ImageSliderActivity : AppCompatActivity() {
     }
 
     private fun getImagesData() {
-        position = MySingelton.getImagePosition()
-        allImages = MySingelton.getImagesData()!!
+        position = MySingleton.getImagePosition()
+        allImages = MySingleton.getImagesData()!!
     }
 
     private fun setPagerAdapter() {

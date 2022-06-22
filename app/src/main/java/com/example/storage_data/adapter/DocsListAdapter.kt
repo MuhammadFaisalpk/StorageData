@@ -3,8 +3,6 @@ package com.example.storage_data.adapter
 import android.app.Activity
 import android.app.Dialog
 import android.content.ContentUris
-import android.content.Context
-import android.content.SharedPreferences
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -22,8 +20,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
-import com.example.storage_data.utils.MySingelton
-import com.example.storage_data.utils.ViewTypeInterface
+import com.example.storage_data.utils.SharedPrefs
+import com.example.storage_data.interfaces.ViewTypeInterface
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
@@ -69,10 +67,7 @@ class DocsListAdapter(
                 holder.clMain.setBackgroundResource(android.R.color.transparent)
             }
             holder.itemView.setOnClickListener() {
-                if (!isLongPress) {
-                    Toast.makeText(context.context, items?.get(position)?.title, Toast.LENGTH_SHORT)
-                        .show()
-                } else {
+                if (isLongPress) {
                     longPressCheck(position, holder)
                 }
             }
@@ -95,7 +90,6 @@ class DocsListAdapter(
                         R.id.action_delete -> {
                             if (document != null) {
                                 deleteFunction(it, document)
-//                                mDeleteFunction(it, document)
                             }
                         }
                     }
@@ -113,24 +107,15 @@ class DocsListAdapter(
         val check = checkList?.get(position)?.selected
         val value = checkList?.get(position)?.item
 
-        val sharedPreferences: SharedPreferences? =
-            context.context?.getSharedPreferences(
-                "kotlinsharedpreference",
-                Context.MODE_PRIVATE
-            )
-        val editor: SharedPreferences.Editor? = sharedPreferences?.edit()
-
+        val prefs = context.context?.let { SharedPrefs.SharedPreferences(it) }
 
         if (check == true) {
 
-            checkList?.removeAt(position)
-            checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
+            value?.let { SelectedModel(false, it) }?.let { checkList?.set(position, it) }
 
             holder.clMain.setBackgroundResource(android.R.color.transparent)
         } else {
-
-            checkList?.removeAt(position)
-            checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
+            value?.let { SelectedModel(true, it) }?.let { checkList?.set(position, it) }
 
             holder.clMain.setBackgroundResource(R.color.purple_200)
         }
@@ -138,19 +123,18 @@ class DocsListAdapter(
             val check = checkList!![i].selected
 
             if (check) {
-                editor?.putBoolean("long_press_docs", true)
-                editor?.putBoolean("long_press_videos", false)
-                editor?.putBoolean("long_press_images", false)
-
-                editor?.apply()
+                if (prefs != null) {
+                    SharedPrefs.setDocsPrefs(prefs, true)
+                }
 
                 isLongPress = true
 
                 (context.context as? ViewTypeInterface)?.setSaveCheckRes(true)
                 break
             } else {
-                editor?.putBoolean("long_press_docs", false)
-
+                if (prefs != null) {
+                    SharedPrefs.setDocsPrefs(prefs, false)
+                }
                 isLongPress = false
 
                 (context.context as? ViewTypeInterface)?.setSaveCheckRes(false)
@@ -313,64 +297,10 @@ class DocsListAdapter(
         delDialog.show()
     }
 
-    private fun mDeleteFunction(v: View?, docs: MyModel?) {
-        val contentResolver = context.requireContext().contentResolver
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            //list of docs to delete
-            val uri = docs?.id?.let {
-                ContentUris.withAppendedId(
-                    MediaStore.Images.Media.getContentUri(
-                        VOLUME_INTERNAL
-                    ), it.toLong()
-                )
-            }
-
-            val uriList: List<Uri> = listOf(uri) as List<Uri>
-            //requesting for delete permission
-            val pi =
-                MediaStore.createDeleteRequest(
-                    contentResolver,
-                    uriList
-                )
-            if (v != null) {
-                (v.context as Activity).startIntentSenderForResult(
-                    pi.intentSender, 127,
-                    null, 0, 0, 0, null
-                )
-            }
-        } else {
-            //for devices less than android 11
-            if (v != null) {
-                val file = docs?.path?.let { File(it) }
-                val builder = MaterialAlertDialogBuilder(v.context)
-                builder.setTitle("Delete Document?")
-                    .setMessage(docs?.title)
-                    .setPositiveButton("Yes") { self, _ ->
-                        if (file != null) {
-                            if (file.exists() && file.delete()) {
-                                MediaScannerConnection.scanFile(
-                                    v.context,
-                                    arrayOf(file.path),
-                                    null,
-                                    null
-                                )
-                                afterDeletePermission(newPosition)
-                            }
-                        }
-                        self.dismiss()
-                    }
-                    .setNegativeButton("No") { self, _ -> self.dismiss() }
-                val delDialog = builder.create()
-                delDialog.show()
-            }
-        }
-    }
-
     private fun afterDeletePermission(position: Int) {
         items?.removeAt(position)
+        checkList?.removeAt(position)
         notifyDataSetChanged()
-//        notifyItemChanged(position)
     }
 
     fun setListItems(items: ArrayList<MyModel>) {

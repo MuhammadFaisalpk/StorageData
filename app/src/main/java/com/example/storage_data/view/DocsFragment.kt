@@ -1,17 +1,24 @@
 package com.example.storage_data.view
 
+import android.Manifest
 import android.app.Dialog
-import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.media.MediaScannerConnection
+import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.activity.result.ActivityResultCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -21,15 +28,20 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
 import com.example.storage_data.adapter.DocsListAdapter
 import com.example.storage_data.databinding.FragmentDocsBinding
+import com.example.storage_data.interfaces.SelectionInterface
+import com.example.storage_data.interfaces.ViewTypeInterface
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
-import com.example.storage_data.utils.*
+import com.example.storage_data.utils.SavingDialog
+import com.example.storage_data.utils.SharedPrefs
 import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 
 
 class DocsFragment : Fragment(), SelectionInterface {
@@ -44,6 +56,20 @@ class DocsFragment : Fragment(), SelectionInterface {
     private var dialog: Dialog? = null
     private lateinit var sharedPreferences: SharedPreferences
 
+    private var activityResultLauncher: ActivityResultLauncher<Array<String>> =
+        registerForActivityResult(
+            RequestMultiplePermissions()
+        ) { result ->
+            var allAreGranted = true
+            for (b in result.values) {
+                allAreGranted = allAreGranted && b
+            }
+
+            if (allAreGranted) {
+                Toast.makeText(context, "Permissions Granted", Toast.LENGTH_SHORT).show()
+            }
+        }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -56,17 +82,20 @@ class DocsFragment : Fragment(), SelectionInterface {
         )
 
         initViews()
+        val appPerms = arrayOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
+
+//        activityResultLauncher.launch(appPerms)
+
         getAllItemsList()
 
         return binding.root
     }
 
     private fun initViews() {
-        sharedPreferences =
-            context?.getSharedPreferences(
-                "kotlinsharedpreference",
-                Context.MODE_PRIVATE
-            )!!
+        sharedPreferences = context?.let { SharedPrefs.SharedPreferences(it) }!!
 
         recyclerView = binding.recyclerView
         progressBar = binding.progressBar
@@ -90,11 +119,14 @@ class DocsFragment : Fragment(), SelectionInterface {
         val isSelected: Boolean = docsListAdapter.getSelectedItemsCheck()
         (activity as? ViewTypeInterface)?.setSaveCheckRes(isSelected)
 
-        val sharedImages = sharedPreferences.getBoolean("long_press_images", false)
-        val sharedVideos = sharedPreferences.getBoolean("long_press_videos", false)
+        val prefs = context?.let { SharedPrefs.SharedPreferences(it) }
+        if (prefs != null) {
+            val sharedImages = SharedPrefs.getImagesPrefs(prefs)
+            val sharedVideos = SharedPrefs.getVideosPrefs(prefs)
 
-        if (sharedImages || sharedVideos) {
-            unSelectAllItems()
+            if (sharedImages || sharedVideos) {
+                unSelectAllItems()
+            }
         }
     }
 
@@ -137,7 +169,6 @@ class DocsFragment : Fragment(), SelectionInterface {
         }
         if (newArray != null) {
 
-            dialog?.show()
 
             CoroutineScope(Dispatchers.IO).launch {
                 try {
@@ -146,7 +177,6 @@ class DocsFragment : Fragment(), SelectionInterface {
                     e.printStackTrace()
                 }
             }
-            unSelectAllItems()
         }
     }
 
@@ -154,6 +184,9 @@ class DocsFragment : Fragment(), SelectionInterface {
         list: ArrayList<MyModel>,
     ) {
         withContext(Dispatchers.IO) {
+            withContext(Dispatchers.Main) {
+                dialog?.show()
+            }
             list.forEachIndexed { index, imageModel ->
 
                 val sourceFile = File(imageModel.path!!)
@@ -161,31 +194,36 @@ class DocsFragment : Fragment(), SelectionInterface {
                 val directory =
                     File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
 
-                val dFiles = File(
-                    directory,
-                    sourceFile.name
-                )
                 if (!directory.exists()) {
                     directory.mkdirs()
                 }
 
+                val dFiles = File(
+                    directory,
+                    sourceFile.name
+                )
+
                 try {
-                    if (sourceFile.exists()) {
-
-                        copySelectedImages(sourceFile, dFiles)
-
+                    if (!dFiles.exists()) {
+                        dFiles.createNewFile()
+                        if (sourceFile.exists()) {
+                            copySelectedDocs(sourceFile, dFiles)
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e("TAG", "onSavedItem:Not Saved ")
                 }
-                if (index == list.size - 1) {
-                    dialog?.dismiss()
-                }
+            }
+            withContext(Dispatchers.Main) {
+                dialog?.dismiss()
+                unSelectAllItems()
+
+                Toast.makeText(context, "Selected files saved.", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun copySelectedImages(src: File, dest: File) {
+    private fun copySelectedDocs(src: File, dest: File) {
         FileInputStream(src).use { fis ->
             FileOutputStream(dest).use { os ->
                 val buffer = ByteArray(1024)
@@ -203,57 +241,7 @@ class DocsFragment : Fragment(), SelectionInterface {
         }
     }
 
-    private fun saveDocumentFile(pos: Int, filePath: String?) {
-        val newName = "DOC_${System.currentTimeMillis() + pos}.pdf"
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val currentFile = filePath?.let { File(it) }
-
-                val wallpaperDirectory =
-                    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
-
-                val newFile = File(
-                    wallpaperDirectory,
-                    newName
-                )
-                if (!wallpaperDirectory.exists()) {
-                    wallpaperDirectory.mkdirs()
-                }
-                if (currentFile != null) {
-                    if (currentFile.exists()) {
-                        val `in`: InputStream = FileInputStream(currentFile)
-                        val out: OutputStream = FileOutputStream(newFile)
-
-                        // Copy the bits from instream to outstream
-                        val buf = ByteArray(1024)
-                        var len: Int
-                        while (`in`.read(buf).also { len = it } > 0) {
-                            out.write(buf, 0, len)
-                        }
-                        `in`.close()
-                        out.close()
-
-                        MediaScannerConnection.scanFile(
-                            context, arrayOf(newFile.absolutePath), null
-                        ) { path, uri ->
-                            Log.i("ExternalStorage", "Scanned $path:")
-                            Log.i("ExternalStorage", "-> uri=$uri")
-                        }
-
-                        Log.i("ExternalStorage", "Video Saved.")
-
-                    } else {
-                        Log.i("ExternalStorage", "Video saving failed.")
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    override fun selectButtonClick(selectionCheck: Boolean) {
+    override fun selectAllButtonClick(selectionCheck: Boolean) {
         if (selectionCheck) {
             selectAllItems()
         } else {
@@ -272,11 +260,7 @@ class DocsFragment : Fragment(), SelectionInterface {
 
         (activity as? ViewTypeInterface)?.setSaveCheckRes(true)
 
-        val editor: SharedPreferences.Editor? = sharedPreferences.edit()
-        editor?.putBoolean("long_press_images", false)
-        editor?.putBoolean("long_press_videos", false)
-        editor?.putBoolean("long_press_docs", true)
-        editor?.apply()
+        SharedPrefs.setDocsPrefs(sharedPreferences, true)
     }
 
     private fun unSelectAllItems() {
@@ -288,5 +272,7 @@ class DocsFragment : Fragment(), SelectionInterface {
         docsListAdapter.checkSelectedItems(arrayCheck!!)
 
         (activity as? ViewTypeInterface)?.setSaveCheckRes(false)
+
+        SharedPrefs.setDocsPrefs(sharedPreferences, false)
     }
 }

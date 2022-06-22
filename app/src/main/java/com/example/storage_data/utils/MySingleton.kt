@@ -3,7 +3,7 @@ package com.example.storage_data.utils
 import com.example.storage_data.model.MyModel
 
 
-object MySingelton {
+object MySingleton {
 
     private var imagesData: ArrayList<MyModel>? = ArrayList()
     private var videoData: MyModel? = null

@@ -16,8 +16,8 @@ import com.example.storage_data.R
 import com.example.storage_data.adapter.SavedListAdapter
 import com.example.storage_data.databinding.FragmentDocsBinding
 import com.example.storage_data.model.SavedModel
-import com.example.storage_data.utils.SelectionInterface
-import com.example.storage_data.utils.ViewTypeInterface
+import com.example.storage_data.interfaces.SelectionInterface
+import com.example.storage_data.interfaces.ViewTypeInterface
 import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,7 +46,6 @@ class SavedFragment : Fragment(), SelectionInterface {
         )
 
         initViews()
-        getAllSavedList()
 
         return binding.root
     }
@@ -70,27 +69,9 @@ class SavedFragment : Fragment(), SelectionInterface {
         super.onResume()
 
         getAllSavedList()
-//        showSavedList()
 
         val isSwitched: Boolean = savedListAdapter.getItemViewType()
         (activity as? ViewTypeInterface)?.setGridDrawableRes(isSwitched)
-    }
-
-    private fun showSavedList() {
-        val file = File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
-        if (file.exists()) {
-            CoroutineScope(Dispatchers.IO).launch {
-                filesArray?.clear()
-                file.listFiles()?.forEachIndexed() { _, file ->
-                    val savedModel = SavedModel(file.name, file.path)
-                    filesArray?.add(savedModel)
-                }
-            }
-            CoroutineScope(Dispatchers.Main).launch {
-                progressBar.visibility = View.GONE
-                filesArray?.let { savedListAdapter.setListItems(it) }
-            }
-        }
     }
 
     private fun getAllSavedList() {
@@ -125,7 +106,7 @@ class SavedFragment : Fragment(), SelectionInterface {
         TODO("Not yet implemented")
     }
 
-    override fun selectButtonClick(selectionCheck: Boolean) {
+    override fun selectAllButtonClick(selectionCheck: Boolean) {
         TODO("Not yet implemented")
     }
 }

@@ -3,9 +3,7 @@ package com.example.storage_data.adapter
 import android.app.Activity
 import android.app.Dialog
 import android.content.ContentValues
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
@@ -21,12 +19,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.storage_data.R
-import com.example.storage_data.activities.ImageSliderActivity
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
 import com.example.storage_data.activities.VideoPlayerActivity
-import com.example.storage_data.utils.MySingelton
-import com.example.storage_data.utils.ViewTypeInterface
+import com.example.storage_data.utils.MySingleton
+import com.example.storage_data.utils.SharedPrefs
+import com.example.storage_data.interfaces.ViewTypeInterface
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
@@ -117,7 +115,7 @@ class VideosListAdapter(private val context: Fragment) :
     }
 
     private fun singlePressCheck(position: Int, it: View) {
-        MySingelton.setVideoData(items?.get(position))
+        MySingleton.setVideoData(items?.get(position))
 
         val intent = Intent(it.context, VideoPlayerActivity::class.java)
         it.context.startActivity(intent)
@@ -127,24 +125,16 @@ class VideosListAdapter(private val context: Fragment) :
         val check = checkList?.get(position)?.selected
         val value = checkList?.get(position)?.item
 
-        val sharedPreferences: SharedPreferences? =
-            context.context?.getSharedPreferences(
-                "kotlinsharedpreference",
-                Context.MODE_PRIVATE
-            )
-        val editor: SharedPreferences.Editor? = sharedPreferences?.edit()
-
+        val prefs = context.context?.let { SharedPrefs.SharedPreferences(it) }
 
         if (check == true) {
 
-            checkList?.removeAt(position)
-            checkList?.add(position, value?.let { it1 -> SelectedModel(false, it1) }!!)
+            value?.let { SelectedModel(false, it) }?.let { checkList?.set(position, it) }
 
             holder.clMain.setBackgroundResource(android.R.color.transparent)
         } else {
 
-            checkList?.removeAt(position)
-            checkList?.add(position, value?.let { it1 -> SelectedModel(true, it1) }!!)
+            value?.let { SelectedModel(true, it) }?.let { checkList?.set(position, it) }
 
             holder.clMain.setBackgroundResource(R.color.purple_200)
         }
@@ -152,19 +142,18 @@ class VideosListAdapter(private val context: Fragment) :
             val check = checkList!![i].selected
 
             if (check) {
-                editor?.putBoolean("long_press_videos", true)
-                editor?.putBoolean("long_press_images", false)
-                editor?.putBoolean("long_press_docs", false)
-
-                editor?.apply()
+                if (prefs != null) {
+                    SharedPrefs.setVideosPrefs(prefs, true)
+                }
 
                 isLongPress = true
 
                 (context.context as? ViewTypeInterface)?.setSaveCheckRes(true)
                 break
             } else {
-                editor?.putBoolean("long_press_videos", false)
-                editor?.apply()
+                if (prefs != null) {
+                    SharedPrefs.setVideosPrefs(prefs, false)
+                }
 
                 isLongPress = false
 
@@ -222,8 +211,8 @@ class VideosListAdapter(private val context: Fragment) :
 
     fun onResult(requestCode: Int) {
         when (requestCode) {
-            123 -> afterDeletePermission(newPosition)
-            124 -> afterRenamePermission(newPosition)
+            125 -> afterDeletePermission(newPosition)
+            126 -> afterRenamePermission(newPosition)
         }
     }
 
@@ -258,7 +247,7 @@ class VideosListAdapter(private val context: Fragment) :
                             uriList
                         )
                     (context.context as Activity).startIntentSenderForResult(
-                        pi.intentSender, 124,
+                        pi.intentSender, 126,
                         null, 0, 0, 0, null
                     )
                 } else {
@@ -378,7 +367,7 @@ class VideosListAdapter(private val context: Fragment) :
                     MediaStore.createDeleteRequest(v.context.contentResolver, uriList)
 
                 (v.context as Activity).startIntentSenderForResult(
-                    pi.intentSender, 123,
+                    pi.intentSender, 125,
                     null, 0, 0, 0, null
                 )
             }
@@ -412,8 +401,8 @@ class VideosListAdapter(private val context: Fragment) :
 
     private fun afterDeletePermission(position: Int) {
         items?.removeAt(position)
+        checkList?.removeAt(position)
         notifyDataSetChanged()
-//        notifyItemChanged(position)
     }
 
     fun setListItems(items: ArrayList<MyModel>) {

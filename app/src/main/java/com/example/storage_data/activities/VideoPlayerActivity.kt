@@ -9,7 +9,7 @@ import androidx.databinding.DataBindingUtil
 import com.example.storage_data.R
 import com.example.storage_data.databinding.ActivityVideoPlayerBinding
 import com.example.storage_data.model.MyModel
-import com.example.storage_data.utils.MySingelton
+import com.example.storage_data.utils.MySingleton
 
 class VideoPlayerActivity : AppCompatActivity() {
 
@@ -32,7 +32,7 @@ class VideoPlayerActivity : AppCompatActivity() {
     }
 
     private fun getSetData() {
-        val videoData = MySingelton.getVideoData()
+        val videoData = MySingleton.getVideoData()
         titleView.text = videoData?.title
 
         val mediaController = MediaController(this)
