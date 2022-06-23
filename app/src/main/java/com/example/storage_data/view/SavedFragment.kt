@@ -2,10 +2,12 @@ package com.example.storage_data.view
 
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -22,6 +24,7 @@ import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 
@@ -46,6 +49,7 @@ class SavedFragment : Fragment(), SelectionInterface {
         )
 
         initViews()
+        getAllSavedList()
 
         return binding.root
     }
@@ -80,14 +84,16 @@ class SavedFragment : Fragment(), SelectionInterface {
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         )[ViewModel::class.java]
 
+        viewModal.loadSaved()
+
         viewModal.getSaved().observe(viewLifecycleOwner) { paths ->
             // update UI
+
             filesArray = paths as ArrayList<SavedModel>?
-            progressBar.visibility = View.GONE
 
             filesArray?.let { savedListAdapter.setListItems(it) }
+            progressBar.visibility = View.GONE
         }
-        viewModal.loadSaved()
     }
 
 

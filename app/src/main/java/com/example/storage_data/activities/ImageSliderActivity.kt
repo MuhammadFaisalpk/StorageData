@@ -12,6 +12,7 @@ import com.example.storage_data.databinding.ActivityImageSliderBinding
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.utils.MySingleton
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import java.lang.reflect.Type
 

@@ -6,9 +6,8 @@ import com.example.storage_data.model.MyModel
 object MySingleton {
 
     private var imagesData: ArrayList<MyModel>? = ArrayList()
-    private var videoData: MyModel? = null
     private var imagePosition: Int = 0
-
+    private var videoData: MyModel? = null
 
     fun setImagesData(data: ArrayList<MyModel>?) {
         imagesData = data

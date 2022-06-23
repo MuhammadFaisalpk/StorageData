@@ -1,13 +1,12 @@
 package com.example.storage_data.adapter
 
-import android.app.Activity
 import android.app.Dialog
-import android.content.ContentUris
+import android.content.ContentValues
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import android.provider.MediaStore.VOLUME_INTERNAL
+import android.system.Os.rename
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -18,11 +17,10 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.example.storage_data.R
+import com.example.storage_data.interfaces.ViewTypeInterface
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
 import com.example.storage_data.utils.SharedPrefs
-import com.example.storage_data.interfaces.ViewTypeInterface
-import com.example.storage_data.utils.DELETE_DOCS_PERMISSION
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
@@ -210,13 +208,14 @@ class DocsListAdapter(
                 try {
                     val currentFile = items?.get(position)?.path?.let { it1 -> File(it1) }
                     if (currentFile != null) {
-                        if (currentFile.exists() && newName.toString()
+                        if (currentFile.exists() && newName
                                 .isNotEmpty()
                         ) {
                             val newFile = File(
                                 currentFile.parentFile,
-                                newName.toString() + "." + currentFile.extension
+                                newName + "." + currentFile.extension
                             )
+
                             if (currentFile.renameTo(newFile)) {
                                 MediaScannerConnection.scanFile(
                                     context.context,
@@ -251,7 +250,7 @@ class DocsListAdapter(
         newItem: MyModel?, position: Int, newName: String, newFile: File
     ) {
 
-        val newItem = MyModel(
+        val finalItem = MyModel(
             newItem?.id,
             newName,
             null,
@@ -259,7 +258,7 @@ class DocsListAdapter(
             Uri.fromFile(newFile)
         )
         items?.removeAt(position)
-        items?.add(position, newItem)
+        items?.add(position, finalItem)
         notifyItemChanged(position)
     }
 

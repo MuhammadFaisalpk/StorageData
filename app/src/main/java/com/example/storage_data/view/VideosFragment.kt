@@ -106,16 +106,17 @@ class VideosFragment : Fragment(), SelectionInterface {
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         )[ViewModel::class.java]
 
+        viewModal.loadVideos()
+
         viewModal.getVideos().observe(viewLifecycleOwner) { paths ->
             // update UI
             videosArray = paths as ArrayList<MyModel>
 
-            progressBar.visibility = View.GONE
             videosListAdapter.setListItems(videosArray!!)
 
+            progressBar.visibility = View.GONE
             unSelectAllItems()
         }
-        viewModal.loadVideos()
 
     }
 
@@ -157,16 +158,17 @@ class VideosFragment : Fragment(), SelectionInterface {
             withContext(Dispatchers.Main) {
                 dialog?.show()
             }
-            list.forEachIndexed { index, imageModel ->
+            list.forEachIndexed { _, imageModel ->
 
                 val sourceFile = File(imageModel.path!!)
+                val destFile = File(savedDirectoryName)
 
-                if (!savedDirectoryName.exists()) {
-                    savedDirectoryName.mkdirs()
+                if (!destFile.exists()) {
+                    destFile.mkdirs()
                 }
 
                 val dFiles = File(
-                    savedDirectoryName,
+                    destFile,
                     sourceFile.name
                 )
 

@@ -1,6 +1,8 @@
 package com.example.storage_data.activities
 
 import android.os.Bundle
+import android.util.DisplayMetrics
+import android.widget.LinearLayout
 import android.widget.MediaController
 import android.widget.TextView
 import android.widget.VideoView
@@ -8,8 +10,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import com.example.storage_data.R
 import com.example.storage_data.databinding.ActivityVideoPlayerBinding
-import com.example.storage_data.model.MyModel
 import com.example.storage_data.utils.MySingleton
+
 
 class VideoPlayerActivity : AppCompatActivity() {
 

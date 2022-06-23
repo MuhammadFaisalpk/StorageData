@@ -105,16 +105,17 @@ class ImagesFragment : Fragment(), SelectionInterface {
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         )[ViewModel::class.java]
 
+        viewModal.loadImages()
+
         viewModal.getImages().observe(viewLifecycleOwner) { paths ->
             // update UI
             imagesArray = paths as ArrayList<MyModel>?
 
-            progressBar.visibility = View.GONE
             imagesListAdapter.setListItems(imagesArray!!)
 
+            progressBar.visibility = View.GONE
             unSelectAllItems()
         }
-        viewModal.loadImages()
     }
 
     override fun gridButtonClick() {
@@ -156,16 +157,17 @@ class ImagesFragment : Fragment(), SelectionInterface {
             withContext(Dispatchers.Main) {
                 dialog?.show()
             }
-            list.forEachIndexed { index, imageModel ->
+            list.forEachIndexed { _, imageModel ->
 
                 val sourceFile = File(imageModel.path!!)
+                val destFile = File(savedDirectoryName)
 
-                if (!savedDirectoryName.exists()) {
-                    savedDirectoryName.mkdirs()
+                if (!destFile.exists()) {
+                    destFile.mkdirs()
                 }
 
                 val dFiles = File(
-                    savedDirectoryName,
+                    destFile,
                     sourceFile.name
                 )
 

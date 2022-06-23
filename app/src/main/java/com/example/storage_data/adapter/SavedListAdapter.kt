@@ -1,5 +1,6 @@
 package com.example.storage_data.adapter
 
+import android.annotation.SuppressLint
 import android.app.Dialog
 import android.media.MediaScannerConnection
 import android.util.Log
@@ -48,8 +49,8 @@ class SavedListAdapter(
             val position = holder.adapterPosition
 
             val files = items?.get(position)
-            var name = files?.name
-            var path = files?.path
+            val name = files?.name
+            val path = files?.path
 
             holder.nameHolder.text = name
 
@@ -179,6 +180,7 @@ class SavedListAdapter(
         delDialog.show()
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun afterDeletePermission(position: Int) {
         items?.removeAt(position)
         notifyDataSetChanged()
@@ -209,6 +211,7 @@ class SavedListAdapter(
         return isSwitchView
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     fun setListItems(data: ArrayList<SavedModel>) {
         items = data
         notifyDataSetChanged()

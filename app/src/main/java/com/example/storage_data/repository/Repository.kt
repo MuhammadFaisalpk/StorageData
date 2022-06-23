@@ -6,13 +6,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.view.View
+import android.util.Log
 import android.webkit.MimeTypeMap
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SavedModel
 import com.example.storage_data.utils.savedDirectoryName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -135,6 +136,7 @@ class Repository(private val application: Application) {
             MediaStore.Files.FileColumns.DATE_ADDED,
             MediaStore.Files.FileColumns.DATA,
             MediaStore.Files.FileColumns.MIME_TYPE,
+            MediaStore.Files.FileColumns.DISPLAY_NAME,
         )
         val sortOrder = MediaStore.Files.FileColumns.DATE_ADDED + " DESC"
         val selection = MediaStore.Files.FileColumns.MIME_TYPE + " = ?"
@@ -160,10 +162,13 @@ class Repository(private val application: Application) {
                         cursor.getColumnIndex(MediaStore.Files.FileColumns.DATA)
                     val columnName: Int =
                         cursor.getColumnIndex(MediaStore.Files.FileColumns.TITLE)
+                    val displayName: Int =
+                        cursor.getColumnIndex(MediaStore.Files.FileColumns.DISPLAY_NAME)
                     do {
                         val id: String = cursor.getString(columnID)
                         val path: String = cursor.getString(columnData)
                         val name: String = cursor.getString(columnName)
+                        val dname: String = cursor.getString(displayName)
 
                         val file = File(path)
                         val fileUri = Uri.fromFile(file)
@@ -189,17 +194,17 @@ class Repository(private val application: Application) {
     fun fetchAllSaved(): ArrayList<SavedModel> {
         val listSaved: ArrayList<SavedModel> = ArrayList()
 
-        if (savedDirectoryName.exists()) {
+        val destFile = File(savedDirectoryName)
+
+        if (destFile.exists()) {
             CoroutineScope(Dispatchers.IO).launch {
-                var filesList = savedDirectoryName.listFiles()
-                filesList.forEachIndexed() { _, file ->
+                destFile.listFiles()?.forEachIndexed() { _, file ->
                     val savedModel = SavedModel(file.name, file.path)
 
                     listSaved.add(savedModel)
                 }
             }
         }
-
         return listSaved
     }
 }

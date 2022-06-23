@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 
 class SharedPrefs {
-    companion object {
 
+    companion object {
         fun SharedPreferences(context: Context): SharedPreferences {
             return context.getSharedPreferences(
                 FRAGMENT_SELECTION_PREFS,

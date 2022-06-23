@@ -40,7 +40,6 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 
-
 class DocsFragment : Fragment(), SelectionInterface {
 
     private lateinit var viewModal: ViewModel
@@ -133,16 +132,17 @@ class DocsFragment : Fragment(), SelectionInterface {
             ViewModelProvider.AndroidViewModelFactory.getInstance(activity?.application!!)
         )[ViewModel::class.java]
 
+        viewModal.loadDocs()
+
         viewModal.getDocs().observe(viewLifecycleOwner) { paths ->
             // update UI
             docsArray = paths as ArrayList<MyModel>
 
-            progressBar.visibility = View.GONE
             docsListAdapter.setListItems(docsArray)
 
+            progressBar.visibility = View.GONE
             unSelectAllItems()
         }
-        viewModal.loadDocs()
     }
 
     override fun gridButtonClick() {
@@ -184,16 +184,17 @@ class DocsFragment : Fragment(), SelectionInterface {
             withContext(Dispatchers.Main) {
                 dialog?.show()
             }
-            list.forEachIndexed { index, imageModel ->
+            list.forEachIndexed { _, imageModel ->
 
                 val sourceFile = File(imageModel.path!!)
+                val destFile = File(savedDirectoryName)
 
-                if (!savedDirectoryName.exists()) {
-                    savedDirectoryName.mkdirs()
+                if (!destFile.exists()) {
+                    destFile.mkdirs()
                 }
 
                 val dFiles = File(
-                    savedDirectoryName,
+                    destFile,
                     sourceFile.name
                 )
 

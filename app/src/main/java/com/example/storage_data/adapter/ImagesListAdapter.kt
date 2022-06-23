@@ -28,6 +28,7 @@ import com.example.storage_data.utils.MySingleton
 import com.example.storage_data.utils.RENAME_IMAGE_PERMISSION
 import com.example.storage_data.utils.SharedPrefs
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.gson.GsonBuilder
 import java.io.File
 
 
@@ -100,7 +101,7 @@ class ImagesListAdapter(
 
                     when (item.itemId) {
                         R.id.action_rename ->
-                        renameFunction(newPosition)
+                            renameFunction(newPosition)
                         R.id.action_delete ->
                             deleteFunction(it, images)
                     }
@@ -345,7 +346,7 @@ class ImagesListAdapter(
         newName: String,
         newFile: File
     ) {
-        val newItem = MyModel(
+        val finalItem = MyModel(
             newItem?.id,
             newName,
             newItem?.folderName,
@@ -353,7 +354,7 @@ class ImagesListAdapter(
             Uri.fromFile(newFile)
         )
         items?.removeAt(position)
-        items?.add(position, newItem)
+        items?.add(position, finalItem)
         notifyItemChanged(position)
     }
 

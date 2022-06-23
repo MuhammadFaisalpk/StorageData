@@ -22,8 +22,7 @@ const val RENAME_VIDEO_PERMISSION = 126
 const val DELETE_DOCS_PERMISSION = 127
 const val RENAME_DOCS_PERMISSION = 128
 
-val savedDirectoryName =
-    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
+val savedDirectoryName = "${Environment.getExternalStorageDirectory()}/Download/StorageData/"
 
 val fragmentsNames = arrayListOf(
     "Images", "Videos",

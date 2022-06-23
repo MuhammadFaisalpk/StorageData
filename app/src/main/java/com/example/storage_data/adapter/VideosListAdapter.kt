@@ -339,9 +339,11 @@ class VideosListAdapter(private val context: Fragment) :
         }
     }
 
-    private fun updateRenameUI(newItem: MyModel?, position: Int, newName: String, newFile: File) {
+    private fun updateRenameUI(
+        newItem: MyModel?, position: Int, newName: String, newFile: File
+    ) {
 
-        val newItem = MyModel(
+        val finalItem = MyModel(
             newItem?.id,
             newName,
             newItem?.folderName,
@@ -349,7 +351,7 @@ class VideosListAdapter(private val context: Fragment) :
             Uri.fromFile(newFile)
         )
         items?.removeAt(position)
-        items?.add(position, newItem)
+        items?.add(position, finalItem)
         notifyItemChanged(position)
     }
 
