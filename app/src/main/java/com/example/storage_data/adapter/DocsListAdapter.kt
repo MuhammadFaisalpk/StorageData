@@ -22,6 +22,7 @@ import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
 import com.example.storage_data.utils.SharedPrefs
 import com.example.storage_data.interfaces.ViewTypeInterface
+import com.example.storage_data.utils.DELETE_DOCS_PERMISSION
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
@@ -188,13 +189,6 @@ class DocsListAdapter(
     fun toggleItemViewType(): Boolean {
         isSwitchView = !isSwitchView
         return isSwitchView
-    }
-
-    fun onResult(requestCode: Int) {
-        when (requestCode) {
-            127 -> afterDeletePermission(newPosition)
-            128 -> renameFunction(newPosition)
-        }
     }
 
     private fun renameFunction(position: Int) {

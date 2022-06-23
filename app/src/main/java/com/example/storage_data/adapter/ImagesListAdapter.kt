@@ -23,10 +23,11 @@ import com.example.storage_data.activities.ImageSliderActivity
 import com.example.storage_data.interfaces.ViewTypeInterface
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
+import com.example.storage_data.utils.DELETE_IMAGE_PERMISSION
 import com.example.storage_data.utils.MySingleton
+import com.example.storage_data.utils.RENAME_IMAGE_PERMISSION
 import com.example.storage_data.utils.SharedPrefs
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.gson.Gson
 import java.io.File
 
 
@@ -99,7 +100,7 @@ class ImagesListAdapter(
 
                     when (item.itemId) {
                         R.id.action_rename ->
-                            renameFunction(newPosition)
+                        renameFunction(newPosition)
                         R.id.action_delete ->
                             deleteFunction(it, images)
                     }
@@ -209,8 +210,8 @@ class ImagesListAdapter(
 
     fun onResult(requestCode: Int) {
         when (requestCode) {
-            123 -> afterDeletePermission(newPosition)
-            124 -> afterRenamePermission(newPosition)
+            DELETE_IMAGE_PERMISSION -> afterDeletePermission(newPosition)
+            RENAME_IMAGE_PERMISSION -> afterRenamePermission(newPosition)
         }
     }
 
@@ -246,7 +247,7 @@ class ImagesListAdapter(
                         )
 
                     (context.context as Activity).startIntentSenderForResult(
-                        pi.intentSender, 124,
+                        pi.intentSender, RENAME_IMAGE_PERMISSION,
                         null, 0, 0, 0, null
                     )
                 } else {
@@ -373,7 +374,7 @@ class ImagesListAdapter(
                 )
             if (v != null) {
                 (v.context as Activity).startIntentSenderForResult(
-                    pi.intentSender, 123,
+                    pi.intentSender, DELETE_IMAGE_PERMISSION,
                     null, 0, 0, 0, null
                 )
             }

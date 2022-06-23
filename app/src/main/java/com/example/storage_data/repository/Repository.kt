@@ -10,6 +10,7 @@ import android.view.View
 import android.webkit.MimeTypeMap
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SavedModel
+import com.example.storage_data.utils.savedDirectoryName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -188,10 +189,9 @@ class Repository(private val application: Application) {
     fun fetchAllSaved(): ArrayList<SavedModel> {
         val listSaved: ArrayList<SavedModel> = ArrayList()
 
-        val file = File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
-        if (file.exists()) {
+        if (savedDirectoryName.exists()) {
             CoroutineScope(Dispatchers.IO).launch {
-                var filesList = file.listFiles()
+                var filesList = savedDirectoryName.listFiles()
                 filesList.forEachIndexed() { _, file ->
                     val savedModel = SavedModel(file.name, file.path)
 

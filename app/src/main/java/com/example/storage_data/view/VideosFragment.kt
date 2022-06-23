@@ -1,6 +1,7 @@
 package com.example.storage_data.view
 
 
+import android.app.Activity
 import android.app.Dialog
 import android.content.SharedPreferences
 import android.media.MediaScannerConnection
@@ -76,7 +77,7 @@ class VideosFragment : Fragment(), SelectionInterface {
         videosListAdapter = VideosListAdapter(this)
         recyclerView.adapter = videosListAdapter
 
-        dialog = context?.let { SavingDialog.progressDialog(it) }
+        dialog = context?.let { Helpers(it as Activity).progressDialog() }
     }
 
     override fun onResume() {
@@ -160,15 +161,12 @@ class VideosFragment : Fragment(), SelectionInterface {
 
                 val sourceFile = File(imageModel.path!!)
 
-                val directory =
-                    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
-
-                if (!directory.exists()) {
-                    directory.mkdirs()
+                if (!savedDirectoryName.exists()) {
+                    savedDirectoryName.mkdirs()
                 }
 
                 val dFiles = File(
-                    directory,
+                    savedDirectoryName,
                     sourceFile.name
                 )
 

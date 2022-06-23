@@ -1,5 +1,6 @@
 package com.example.storage_data.view
 
+import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.content.SharedPreferences
@@ -75,7 +76,7 @@ class ImagesFragment : Fragment(), SelectionInterface {
         imagesListAdapter = ImagesListAdapter(this)
         recyclerView.adapter = imagesListAdapter
 
-        dialog = context?.let { SavingDialog.progressDialog(it) }
+        dialog = context?.let { Helpers(it as Activity).progressDialog() }
     }
 
     override fun onResume() {
@@ -159,15 +160,12 @@ class ImagesFragment : Fragment(), SelectionInterface {
 
                 val sourceFile = File(imageModel.path!!)
 
-                val directory =
-                    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
-
-                if (!directory.exists()) {
-                    directory.mkdirs()
+                if (!savedDirectoryName.exists()) {
+                    savedDirectoryName.mkdirs()
                 }
 
                 val dFiles = File(
-                    directory,
+                    savedDirectoryName,
                     sourceFile.name
                 )
 

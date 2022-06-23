@@ -25,6 +25,8 @@ import com.example.storage_data.activities.VideoPlayerActivity
 import com.example.storage_data.utils.MySingleton
 import com.example.storage_data.utils.SharedPrefs
 import com.example.storage_data.interfaces.ViewTypeInterface
+import com.example.storage_data.utils.DELETE_VIDEO_PERMISSION
+import com.example.storage_data.utils.RENAME_VIDEO_PERMISSION
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
 
@@ -211,8 +213,8 @@ class VideosListAdapter(private val context: Fragment) :
 
     fun onResult(requestCode: Int) {
         when (requestCode) {
-            125 -> afterDeletePermission(newPosition)
-            126 -> afterRenamePermission(newPosition)
+            DELETE_VIDEO_PERMISSION -> afterDeletePermission(newPosition)
+            RENAME_VIDEO_PERMISSION -> afterRenamePermission(newPosition)
         }
     }
 
@@ -247,7 +249,7 @@ class VideosListAdapter(private val context: Fragment) :
                             uriList
                         )
                     (context.context as Activity).startIntentSenderForResult(
-                        pi.intentSender, 126,
+                        pi.intentSender, RENAME_VIDEO_PERMISSION,
                         null, 0, 0, 0, null
                     )
                 } else {
@@ -367,7 +369,7 @@ class VideosListAdapter(private val context: Fragment) :
                     MediaStore.createDeleteRequest(v.context.contentResolver, uriList)
 
                 (v.context as Activity).startIntentSenderForResult(
-                    pi.intentSender, 125,
+                    pi.intentSender, DELETE_VIDEO_PERMISSION,
                     null, 0, 0, 0, null
                 )
             }

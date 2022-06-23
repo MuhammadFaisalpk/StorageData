@@ -1,23 +1,19 @@
 package com.example.storage_data.view
 
 import android.Manifest
+import android.app.Activity
 import android.app.Dialog
-import android.content.Intent
 import android.content.SharedPreferences
 import android.media.MediaScannerConnection
-import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.Toast
-import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
@@ -32,8 +28,9 @@ import com.example.storage_data.interfaces.SelectionInterface
 import com.example.storage_data.interfaces.ViewTypeInterface
 import com.example.storage_data.model.MyModel
 import com.example.storage_data.model.SelectedModel
-import com.example.storage_data.utils.SavingDialog
+import com.example.storage_data.utils.Helpers
 import com.example.storage_data.utils.SharedPrefs
+import com.example.storage_data.utils.savedDirectoryName
 import com.example.storage_data.viewModel.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -107,7 +104,7 @@ class DocsFragment : Fragment(), SelectionInterface {
         docsListAdapter = DocsListAdapter(this)
         recyclerView.adapter = docsListAdapter
 
-        dialog = context?.let { SavingDialog.progressDialog(it) }
+        dialog = context?.let { Helpers(it as Activity).progressDialog() }
     }
 
     override fun onResume() {
@@ -191,15 +188,12 @@ class DocsFragment : Fragment(), SelectionInterface {
 
                 val sourceFile = File(imageModel.path!!)
 
-                val directory =
-                    File("${Environment.getExternalStorageDirectory()}/Download/StorageData/")
-
-                if (!directory.exists()) {
-                    directory.mkdirs()
+                if (!savedDirectoryName.exists()) {
+                    savedDirectoryName.mkdirs()
                 }
 
                 val dFiles = File(
-                    directory,
+                    savedDirectoryName,
                     sourceFile.name
                 )
 
